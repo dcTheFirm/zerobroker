@@ -1,0 +1,12 @@
+# Dependency directories
+node_modules
+
+# Build output
+dist
+
+# Local environment files
+*.local
+
+# Editor files
+.vscode/
+.DS_Store
