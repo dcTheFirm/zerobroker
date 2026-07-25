@@ -4,6 +4,8 @@ import { Footer } from './components/Footer'
 import { Home } from './pages/Home'
 import { ListingsPage } from './pages/ListingsPage'
 import { PropertyDetail } from './pages/PropertyDetail'
+import { SignInPage } from './pages/SignInPage'
+import { ListPropertyPage } from './pages/ListPropertyPage'
 
 export default function App() {
   return (
@@ -32,7 +34,19 @@ export default function App() {
               />
             }
           />
+          <Route
+            path="/search"
+            element={
+              <ListingsPage
+                type="all"
+                title="Search Properties"
+                description="Explore the best properties for rent and sale across cities."
+              />
+            }
+          />
           <Route path="/property/:id" element={<PropertyDetail />} />
+          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/list-property" element={<ListPropertyPage />} />
         </Routes>
       </main>
       <Footer />

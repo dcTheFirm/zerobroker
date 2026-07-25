@@ -183,3 +183,54 @@
     grid-template-columns: 1fr;
   }
 }
+
+.property-detail__notice {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+}
+
+.property-detail__schedule {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.property-detail__schedule h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.property-detail__schedule label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.property-detail__schedule input,
+.property-detail__schedule textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.property-detail__message-input textarea {
+  min-height: 120px;
+}
+
+.property-detail__schedule .btn {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .property-detail__schedule {
+    grid-template-columns: 1fr;
+  }
+}

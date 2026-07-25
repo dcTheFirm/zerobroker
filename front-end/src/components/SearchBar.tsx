@@ -1,6 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { ListingType, SearchFilters } from '../types/property'
+import { getCities } from '../services/api'
 import './SearchBar.css'
+
+const keywordSuggestions = [
+  'Zero Brokerage',
+  'Furnished',
+  'Near Metro',
+  'Sea View',
+  'Gym Access',
+]
 
 interface SearchBarProps {
   filters: SearchFilters
@@ -20,10 +29,7 @@ export function SearchBar({
   const [cities, setCities] = useState<string[]>([])
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/properties/cities')
-      .then((res) => res.json())
-      .then((payload) => setCities(payload.data ?? []))
-      .catch(() => setCities([]))
+    getCities().then(setCities).catch(() => setCities([]))
   }, [])
 
   const handleSubmit = (e: FormEvent) => {
@@ -69,16 +75,25 @@ export function SearchBar({
       <div className="search-bar__fields">
         <div className="search-bar__field">
           <label className="search-bar__label" htmlFor="search-query">
-            Location
+            Search keywords
           </label>
           <input
             id="search-query"
             className="search-bar__input"
             type="text"
-            placeholder="Search by area, locality, or city..."
+            list="search-keywords"
+            placeholder="Search by locality, city, tag or keyword..."
             value={filters.query}
             onChange={(e) => onChange({ ...filters, query: e.target.value })}
           />
+          <datalist id="search-keywords">
+            {keywordSuggestions.map((keyword) => (
+              <option key={keyword} value={keyword} />
+            ))}
+            {cities.map((city) => (
+              <option key={city} value={city} />
+            ))}
+          </datalist>
         </div>
 
         <div className="search-bar__field">
