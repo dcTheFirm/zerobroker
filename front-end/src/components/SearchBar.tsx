@@ -1,6 +1,5 @@
-import type { FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { ListingType, SearchFilters } from '../types/property'
-import { cities } from '../data/properties'
 import './SearchBar.css'
 
 interface SearchBarProps {
@@ -18,6 +17,15 @@ export function SearchBar({
   compact = false,
   defaultType = 'all',
 }: SearchBarProps) {
+  const [cities, setCities] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch('http://localhost:4000/api/properties/cities')
+      .then((res) => res.json())
+      .then((payload) => setCities(payload.data ?? []))
+      .catch(() => setCities([]))
+  }, [])
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     onSearch?.()

@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SearchBar } from '../components/SearchBar'
 import { PropertyCard } from '../components/PropertyCard'
-import { properties } from '../data/properties'
-import { defaultFilters, filterProperties } from '../utils/search'
-import type { ListingType, SearchFilters } from '../types/property'
+import { defaultFilters } from '../utils/search'
+import type { ListingType, Property, SearchFilters } from '../types/property'
 import './ListingsPage.css'
 
 interface ListingsPageProps {
@@ -15,6 +14,7 @@ interface ListingsPageProps {
 
 export function ListingsPage({ type, title, description }: ListingsPageProps) {
   const [searchParams] = useSearchParams()
+  const [results, setResults] = useState<Property[]>([])
 
   const initialFilters: SearchFilters = useMemo(() => ({
     ...defaultFilters,
@@ -26,14 +26,22 @@ export function ListingsPage({ type, title, description }: ListingsPageProps) {
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters)
 
+  useEffect(() => {
+    const query = new URLSearchParams()
+    if (filters.query) query.set('query', filters.query)
+    if (filters.city) query.set('city', filters.city)
+    if (filters.bedrooms) query.set('bedrooms', String(filters.bedrooms))
+    if (filters.type && filters.type !== 'all') query.set('type', filters.type)
+
+    fetch(`http://localhost:4000/api/properties?${query.toString()}`)
+      .then((res) => res.json())
+      .then((payload) => setResults(payload.data ?? []))
+      .catch(() => setResults([]))
+  }, [filters])
+
   const handleFilterChange = (updated: SearchFilters) => {
     setFilters({ ...updated, type })
   }
-
-  const results = useMemo(
-    () => filterProperties(properties, { ...filters, type }),
-    [filters, type],
-  )
 
   return (
     <div className="listings-page">

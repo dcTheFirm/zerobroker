@@ -1,10 +1,18 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { properties } from '../data/properties'
+import type { Property } from '../types/property'
 import './PropertyDetail.css'
 
 export function PropertyDetail() {
   const { id } = useParams()
-  const property = properties.find((p) => p.id === id)
+  const [property, setProperty] = useState<Property | null>(null)
+
+  useEffect(() => {
+    fetch(`http://localhost:4000/api/properties/${id}`)
+      .then((res) => res.json())
+      .then((payload) => setProperty(payload.data ?? null))
+      .catch(() => setProperty(null))
+  }, [id])
 
   if (!property) {
     return (

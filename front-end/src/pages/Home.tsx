@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SearchBar } from '../components/SearchBar'
 import { PropertyCard } from '../components/PropertyCard'
-import { properties, cities } from '../data/properties'
 import { defaultFilters } from '../utils/search'
+import type { Property } from '../types/property'
 import './Home.css'
 
 const cityImages: Record<string, string> = {
@@ -20,17 +20,29 @@ const cityImages: Record<string, string> = {
 export function Home() {
   const navigate = useNavigate()
   const [filters, setFilters] = useState(defaultFilters)
+  const [featured, setFeatured] = useState<Property[]>([])
+  const [cityCounts, setCityCounts] = useState<Array<{ city: string; count: number }>>([])
 
-  const featured = useMemo(
-    () => properties.filter((p) => p.featured).slice(0, 4),
-    [],
-  )
-
-  const cityCounts = useMemo(() => {
-    return cities.map((city) => ({
-      city,
-      count: properties.filter((p) => p.city === city).length,
-    }))
+  useEffect(() => {
+    Promise.all([
+      fetch('http://localhost:4000/api/properties/featured').then((res) => res.json()),
+      fetch('http://localhost:4000/api/properties').then((res) => res.json()),
+    ])
+      .then(([featuredPayload, listingsPayload]) => {
+        const properties = (listingsPayload.data ?? []) as Property[]
+        setFeatured((featuredPayload.data ?? []) as Property[])
+        const cities = Array.from(new Set(properties.map((property) => property.city)))
+        setCityCounts(
+          cities.map((city) => ({
+            city: city as string,
+            count: properties.filter((property) => property.city === city).length,
+          }))
+        )
+      })
+      .catch(() => {
+        setFeatured([])
+        setCityCounts([])
+      })
   }, [])
 
   const handleSearch = () => {
