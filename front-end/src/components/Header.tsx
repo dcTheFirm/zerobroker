@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { getCurrentUser, signOut, subscribeAuthChanges } from '../services/auth'
 import './Header.css'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [user, setUser] = useState(getCurrentUser())
+
+  useEffect(() => {
+    return subscribeAuthChanges(setUser)
+  }, [])
 
   return (
     <header className="header">
@@ -54,8 +60,21 @@ export function Header() {
         </nav>
 
         <div className="header__actions">
-          <button className="btn btn--ghost">Sign In</button>
-          <button className="btn btn--outline">List Property</button>
+          {user ? (
+            <>
+              <span className="header__user">{user.email}</span>
+              <button className="btn btn--ghost" onClick={signOut}>
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link to="/signin" className="btn btn--ghost">
+              Sign In
+            </Link>
+          )}
+          <Link to="/list-property" className="btn btn--outline">
+            List Property
+          </Link>
         </div>
       </div>
     </header>

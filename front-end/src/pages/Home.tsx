@@ -4,6 +4,7 @@ import { SearchBar } from '../components/SearchBar'
 import { PropertyCard } from '../components/PropertyCard'
 import { defaultFilters } from '../utils/search'
 import type { Property } from '../types/property'
+import { getAllProperties, getFeaturedProperties } from '../services/api'
 import './Home.css'
 
 const cityImages: Record<string, string> = {
@@ -24,18 +25,14 @@ export function Home() {
   const [cityCounts, setCityCounts] = useState<Array<{ city: string; count: number }>>([])
 
   useEffect(() => {
-    Promise.all([
-      fetch('http://localhost:4000/api/properties/featured').then((res) => res.json()),
-      fetch('http://localhost:4000/api/properties').then((res) => res.json()),
-    ])
-      .then(([featuredPayload, listingsPayload]) => {
-        const properties = (listingsPayload.data ?? []) as Property[]
-        setFeatured((featuredPayload.data ?? []) as Property[])
-        const cities = Array.from(new Set(properties.map((property) => property.city)))
+    Promise.all([getFeaturedProperties(4), getAllProperties(defaultFilters)])
+      .then(([featuredProperties, allProperties]) => {
+        setFeatured(featuredProperties)
+        const cities = Array.from(new Set(allProperties.map((property) => property.city)))
         setCityCounts(
           cities.map((city) => ({
-            city: city as string,
-            count: properties.filter((property) => property.city === city).length,
+            city,
+            count: allProperties.filter((property) => property.city === city).length,
           }))
         )
       })
@@ -46,11 +43,12 @@ export function Home() {
   }, [])
 
   const handleSearch = () => {
-    const path = filters.type === 'buy' ? '/buy' : '/rent'
+    const path = filters.type === 'buy' ? '/buy' : filters.type === 'rent' ? '/rent' : '/search'
     const params = new URLSearchParams()
     if (filters.query) params.set('q', filters.query)
     if (filters.city) params.set('city', filters.city)
     if (filters.bedrooms) params.set('beds', String(filters.bedrooms))
+    if (filters.type && filters.type !== 'all') params.set('type', filters.type)
     navigate(`${path}?${params.toString()}`)
   }
 
@@ -185,7 +183,9 @@ export function Home() {
               Reach thousands of verified tenants and buyers without paying any
               brokerage or listing fees.
             </p>
-            <button className="btn btn--primary">List Your Property</button>
+            <Link to="/list-property" className="btn btn--primary">
+            List Your Property
+          </Link>
           </div>
         </div>
       </section>

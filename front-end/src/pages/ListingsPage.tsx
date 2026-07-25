@@ -4,10 +4,11 @@ import { SearchBar } from '../components/SearchBar'
 import { PropertyCard } from '../components/PropertyCard'
 import { defaultFilters } from '../utils/search'
 import type { ListingType, Property, SearchFilters } from '../types/property'
+import { listProperties } from '../services/api'
 import './ListingsPage.css'
 
 interface ListingsPageProps {
-  type: ListingType
+  type: ListingType | 'all'
   title: string
   description: string
 }
@@ -18,29 +19,43 @@ export function ListingsPage({ type, title, description }: ListingsPageProps) {
 
   const initialFilters: SearchFilters = useMemo(() => ({
     ...defaultFilters,
-    type,
-    query: searchParams.get('q') ?? '',
+    type: searchParams.get('type') === 'buy' || searchParams.get('type') === 'rent' ? (searchParams.get('type') as ListingType) : type,
+    query: searchParams.get('q') ?? searchParams.get('query') ?? '',
     city: searchParams.get('city') ?? '',
-    bedrooms: searchParams.get('beds') ? Number(searchParams.get('beds')) : null,
+    bedrooms:
+      searchParams.get('beds') != null
+        ? Number(searchParams.get('beds'))
+        : searchParams.get('bedrooms')
+        ? Number(searchParams.get('bedrooms'))
+        : null,
   }), [type, searchParams])
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters)
 
   useEffect(() => {
-    const query = new URLSearchParams()
-    if (filters.query) query.set('query', filters.query)
-    if (filters.city) query.set('city', filters.city)
-    if (filters.bedrooms) query.set('bedrooms', String(filters.bedrooms))
-    if (filters.type && filters.type !== 'all') query.set('type', filters.type)
+    setFilters(initialFilters)
+  }, [initialFilters])
 
-    fetch(`http://localhost:4000/api/properties?${query.toString()}`)
-      .then((res) => res.json())
-      .then((payload) => setResults(payload.data ?? []))
-      .catch(() => setResults([]))
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+
+    listProperties(filters)
+      .then(({ data }) => {
+        setResults(data)
+      })
+      .catch(() => {
+        setError('Unable to load listings right now. Please try again.')
+        setResults([])
+      })
+      .finally(() => setLoading(false))
   }, [filters])
 
   const handleFilterChange = (updated: SearchFilters) => {
-    setFilters({ ...updated, type })
+    setFilters({ ...updated, type: updated.type ?? type })
   }
 
   return (
@@ -55,7 +70,7 @@ export function ListingsPage({ type, title, description }: ListingsPageProps) {
           <div className="location-banner">
             <span className="location-banner__icon">📍</span>
             <span>
-              Showing {type === 'rent' ? 'rental' : 'sale'} properties in{' '}
+              Showing {type === 'rent' ? 'rental' : type === 'buy' ? 'sale' : 'rental and sale'} properties in{' '}
               <strong>{filters.city}</strong> — zero brokerage on all listings
             </span>
           </div>
@@ -74,9 +89,17 @@ export function ListingsPage({ type, title, description }: ListingsPageProps) {
           <p className="listings-page__count">
             <strong>{results.length}</strong> properties found
           </p>
+          {loading && <p className="listings-page__status">Loading properties…</p>}
+          {error && <p className="listings-page__status listings-page__status--error">{error}</p>}
         </div>
 
-        {results.length > 0 ? (
+        {loading ? (
+          <div className="listings-page__empty">
+            <div className="listings-page__empty-icon">⏳</div>
+            <h3>Searching properties</h3>
+            <p>Please wait while we update your results.</p>
+          </div>
+        ) : results.length > 0 ? (
           <div className="listings-grid">
             {results.map((property) => (
               <PropertyCard key={property.id} property={property} />
