@@ -1,5 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+const AUTH_BASE = import.meta.env.VITE_AUTH_BASE_URL ?? 'http://localhost:5000'
 const AUTH_KEY = 'zerobroker-user'
+const OFFLINE_ERROR = 'Authentication service unavailable.'
 
 export interface AuthUser {
   email: string
@@ -27,29 +28,72 @@ export function subscribeAuthChanges(callback: (user: AuthUser | null) => void) 
   return () => window.removeEventListener('zerobroker-auth', listener)
 }
 
+async function fetchAuth<T>(path: string, options?: RequestInit): Promise<T> {
+  let response: Response
+
+  try {
+    response = await fetch(`${AUTH_BASE}${path}`, options)
+  } catch {
+    throw new Error(OFFLINE_ERROR)
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    const message = payload?.error ?? payload?.message ?? 'Authentication request failed.'
+    throw new Error(message)
+  }
+
+  return response.json()
+}
+
+function isOfflineError(error: unknown): boolean {
+  return error instanceof Error && error.message === OFFLINE_ERROR
+}
+
 export async function signIn(email: string, password: string): Promise<{ user: AuthUser; message: string }> {
   try {
-    const response = await fetch(`${API_BASE}/api/auth/signin`, {
+    const payload = await fetchAuth<{ user: AuthUser; message?: string }>('/api/auth/signin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
 
-    if (response.ok) {
-      const payload = await response.json()
-      const user = payload.user ?? { email }
+    const user = payload.user ?? { email }
+    localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+    emitAuthUpdate()
+    return { user, message: payload.message ?? 'Signed in successfully.' }
+  } catch (error) {
+    if (isOfflineError(error)) {
+      const user = { email }
       localStorage.setItem(AUTH_KEY, JSON.stringify(user))
       emitAuthUpdate()
-      return { user, message: 'Signed in successfully.' }
+      return { user, message: 'Signed in with frontend-only mode. Backend auth will connect soon.' }
     }
-  } catch {
-    // no-op: fallback to local auth if backend is not available
+    throw error
   }
+}
 
-  const user = { email }
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user))
-  emitAuthUpdate()
-  return { user, message: 'Signed in with frontend-only mode. Backend auth will connect soon.' }
+export async function signUp(email: string, password: string): Promise<{ user: AuthUser; message: string }> {
+  try {
+    const payload = await fetchAuth<{ user: AuthUser; message?: string }>('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const user = payload.user
+    localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+    emitAuthUpdate()
+    return { user, message: payload.message ?? 'Account created successfully.' }
+  } catch (error) {
+    if (isOfflineError(error)) {
+      const user = { email }
+      localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+      emitAuthUpdate()
+      return { user, message: 'Signed up with frontend-only mode. Backend auth will connect soon.' }
+    }
+    throw error
+  }
 }
 
 export function signOut() {

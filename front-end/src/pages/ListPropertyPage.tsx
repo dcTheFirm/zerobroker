@@ -56,9 +56,13 @@ export function ListPropertyPage() {
             Submit a new listing directly from the frontend. Your request will be
             prepared for backend fulfillment as soon as the API is available.
           </p>
-          {currentUser && (
+          {currentUser ? (
             <p className="list-property-page__user">
               Signed in as <strong>{currentUser.email}</strong>
+            </p>
+          ) : (
+            <p className="list-property-page__alert">
+              Please sign in or sign up to publish a listing. You can still use the app locally while the auth service is offline.
             </p>
           )}
         </div>

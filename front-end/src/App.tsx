@@ -5,6 +5,7 @@ import { Home } from './pages/Home'
 import { ListingsPage } from './pages/ListingsPage'
 import { PropertyDetail } from './pages/PropertyDetail'
 import { SignInPage } from './pages/SignInPage'
+import { SignUpPage } from './pages/SignUpPage'
 import { ListPropertyPage } from './pages/ListPropertyPage'
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
           />
           <Route path="/property/:id" element={<PropertyDetail />} />
           <Route path="/signin" element={<SignInPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
           <Route path="/list-property" element={<ListPropertyPage />} />
         </Routes>
       </main>

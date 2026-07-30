@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { signIn, getCurrentUser } from '../services/auth'
+import { signUp } from '../services/auth'
 import './SignInPage.css'
 
-export function SignInPage() {
+export function SignUpPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -15,32 +16,37 @@ export function SignInPage() {
     setError(null)
     setStatus(null)
 
-    if (!email.trim() || !password.trim()) {
-      setError('Enter both email and password to continue.')
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+      setError('Please complete all fields to create your account.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match. Please try again.')
       return
     }
 
     try {
-      const { message } = await signIn(email.trim(), password)
+      const { message } = await signUp(email.trim(), password)
       setStatus(message)
-      setTimeout(() => navigate('/'), 1200)
+      setTimeout(() => navigate('/signin'), 1200)
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unable to sign in.')
+      setError(error instanceof Error ? error.message : 'Unable to create account.')
     }
   }
 
   return (
     <div className="auth-page">
       <div className="container auth-page__card">
-        <h1>Sign In</h1>
-        <p>Access ZeroBroker with your email address. Your session is saved locally until backend auth is connected.</p>
+        <h1>Create Account</h1>
+        <p>Sign up for ZeroBroker and manage your property listings with your own account.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          <label className="auth-form__label" htmlFor="signin-email">
+          <label className="auth-form__label" htmlFor="signup-email">
             Email address
           </label>
           <input
-            id="signin-email"
+            id="signup-email"
             type="email"
             className="auth-form__input"
             value={email}
@@ -48,16 +54,28 @@ export function SignInPage() {
             placeholder="you@example.com"
           />
 
-          <label className="auth-form__label" htmlFor="signin-password">
+          <label className="auth-form__label" htmlFor="signup-password">
             Password
           </label>
           <input
-            id="signin-password"
+            id="signup-password"
             type="password"
             className="auth-form__input"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter your password"
+            placeholder="Create a strong password"
+          />
+
+          <label className="auth-form__label" htmlFor="signup-confirm-password">
+            Confirm password
+          </label>
+          <input
+            id="signup-confirm-password"
+            type="password"
+            className="auth-form__input"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Re-enter your password"
           />
 
           {(error || status) && (
@@ -67,16 +85,12 @@ export function SignInPage() {
           )}
 
           <button type="submit" className="btn btn--primary auth-form__submit">
-            Sign In
+            Sign Up
           </button>
         </form>
 
         <div className="auth-page__hint">
-          {getCurrentUser()
-            ? 'Already signed in locally. You can safely continue.'
-            : 'If backend auth is not available yet, the app will still keep your session locally.'}
-          <br />
-          New here? <Link to="/signup">Create an account.</Link>
+          Already have an account? <Link to="/signin">Sign in instead</Link>.
         </div>
       </div>
     </div>
