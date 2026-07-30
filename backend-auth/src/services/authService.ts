@@ -14,7 +14,6 @@ type StoredUser = {
   _id?: unknown
 }
 
-const users = new Map<string, StoredUser>()
 let indexesReady = false
 
 function hashPassword(password: string) {
@@ -23,7 +22,10 @@ function hashPassword(password: string) {
 
 async function getUsersCollection() {
   const collection = await getCollection<StoredUser>('users')
-  if (collection && !indexesReady) {
+  if (!collection) {
+    throw new Error('MongoDB collection not available for users')
+  }
+  if (!indexesReady) {
     await collection.createIndex({ email: 1 }, { unique: true })
     indexesReady = true
   }
@@ -38,41 +40,26 @@ export async function registerUser(email: string, password: string): Promise<Aut
   const normalizedEmail = email.toLowerCase().trim()
   const collection = await getUsersCollection()
 
-  if (collection) {
-    try {
-      await collection.insertOne({
-        email: normalizedEmail,
-        passwordHash: hashPassword(password),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      return { email: normalizedEmail }
-    } catch (error) {
-      if (isDuplicateKeyError(error)) {
-        return null
-      }
-      throw error
+  try {
+    await collection.insertOne({
+      email: normalizedEmail,
+      passwordHash: hashPassword(password),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    return { email: normalizedEmail }
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      return null
     }
+    throw error
   }
-
-  if (users.has(normalizedEmail)) {
-    return null
-  }
-
-  users.set(normalizedEmail, {
-    email: normalizedEmail,
-    passwordHash: hashPassword(password),
-  })
-
-  return { email: normalizedEmail }
 }
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {
   const normalizedEmail = email.toLowerCase().trim()
   const collection = await getUsersCollection()
-  const stored = collection
-    ? await collection.findOne({ email: normalizedEmail })
-    : users.get(normalizedEmail)
+  const stored = await collection.findOne({ email: normalizedEmail })
 
   if (!stored) {
     return null
@@ -81,6 +68,3 @@ export async function authenticateUser(email: string, password: string): Promise
   return stored.passwordHash === hashPassword(password) ? { email: stored.email } : null
 }
 
-export function clearLocalUsers() {
-  users.clear()
-}
