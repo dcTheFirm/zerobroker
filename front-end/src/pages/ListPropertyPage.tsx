@@ -16,6 +16,7 @@ export function ListPropertyPage() {
   const [sqft, setSqft] = useState(1000)
   const [price, setPrice] = useState(25000)
   const [image, setImage] = useState('')
+  const [imageFileName, setImageFileName] = useState<string | null>(null)
   const [tags, setTags] = useState('Zero Brokerage, Verified')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -25,10 +26,13 @@ export function ListPropertyPage() {
     setError(null)
     setStatus(null)
 
-    if (!title.trim() || !city.trim() || !area.trim() || !image.trim()) {
+    if (!title.trim() || !city.trim() || !area.trim() || (!image.trim() && !imageFileName)) {
       setError('Fill in all required fields before submitting.')
       return
     }
+
+    // If the user selected a file, image already contains a data URL
+    const payloadImage = image.trim()
 
     const result = await submitPropertyListing({
       title: title.trim(),
@@ -39,7 +43,7 @@ export function ListPropertyPage() {
       bathrooms,
       sqft,
       price,
-      image: image.trim(),
+      image: payloadImage,
       tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
     })
 
@@ -178,14 +182,42 @@ export function ListPropertyPage() {
           </div>
 
           <label className="property-form__label" htmlFor="property-image">
-            Image URL
+            Image (upload or URL)
           </label>
+          <input
+            id="property-image-file"
+            className="property-form__input"
+            type="file"
+            accept="image/*"
+            onChange={async (event) => {
+              const file = event.target.files?.[0]
+              if (!file) return
+              setImageFileName(file.name)
+              // read as data URL
+              const reader = new FileReader()
+              reader.onload = () => {
+                const result = String(reader.result ?? '')
+                setImage(result)
+              }
+              reader.readAsDataURL(file)
+            }}
+          />
+
+          <div style={{ marginTop: '0.5rem' }}>
+            <span style={{ fontSize: '0.9rem', color: '#666' }}>{imageFileName ? `Selected: ${imageFileName}` : 'Or enter an image URL below'}</span>
+          </div>
+
           <input
             id="property-image"
             className="property-form__input"
-            value={image}
-            onChange={(event) => setImage(event.target.value)}
+            value={imageFileName ? image : image}
+            onChange={(event) => {
+              // allow entering a URL instead
+              setImage(event.target.value)
+              setImageFileName(null)
+            }}
             placeholder="https://example.com/image.jpg"
+            style={{ marginTop: '0.5rem' }}
           />
 
           <label className="property-form__label" htmlFor="property-tags">
