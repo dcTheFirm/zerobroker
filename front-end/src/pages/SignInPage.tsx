@@ -33,7 +33,7 @@ export function SignInPage() {
     <div className="auth-page">
       <div className="container auth-page__card">
         <h1>Sign In</h1>
-        <p>Access ZeroBroker with your email address. Your session is saved locally until backend auth is connected.</p>
+        <p>Access ZeroBroker with your email address. The app requires a running auth backend; ensure VITE_AUTH_BASE_URL points to your auth service.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="auth-form__label" htmlFor="signin-email">
@@ -73,8 +73,8 @@ export function SignInPage() {
 
         <div className="auth-page__hint">
           {getCurrentUser()
-            ? 'Already signed in locally. You can safely continue.'
-            : 'If backend auth is not available yet, the app will still keep your session locally.'}
+            ? 'Already signed in.'
+            : 'Not signed in. Please create an account or sign in to continue.'}
           <br />
           New here? <Link to="/signup">Create an account.</Link>
         </div>

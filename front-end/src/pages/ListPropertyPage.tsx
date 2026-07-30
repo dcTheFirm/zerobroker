@@ -62,7 +62,7 @@ export function ListPropertyPage() {
             </p>
           ) : (
             <p className="list-property-page__alert">
-              Please sign in or sign up to publish a listing. You can still use the app locally while the auth service is offline.
+              Please sign in or sign up to publish a listing. You must be signed in to submit a listing.
             </p>
           )}
         </div>

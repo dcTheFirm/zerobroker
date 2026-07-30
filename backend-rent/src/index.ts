@@ -5,7 +5,18 @@ dotenv.config()
 dotenv.config({ path: '../.env' })
 
 const port = Number(process.env.PORT ?? 4002)
+const host = process.env.HOST ?? '0.0.0.0'
 
-app.listen(port, () => {
-  console.log(`ZeroBroker rent backend listening on http://localhost:${port}`)
+const server = app.listen(port, host, () => {
+  const addr = server.address()
+  let bindHost = host
+  let bindPort = port
+
+  if (addr && typeof addr === 'object') {
+    bindHost = addr.address || bindHost
+    bindPort = (addr as any).port || bindPort
+  }
+
+  const publicHost = bindHost === '0.0.0.0' || bindHost === '::' ? 'localhost' : bindHost
+  console.log(`ZeroBroker rent backend listening on http://${publicHost}:${bindPort}`)
 })

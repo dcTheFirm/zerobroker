@@ -1,4 +1,11 @@
-const AUTH_BASE = import.meta.env.VITE_AUTH_BASE_URL ?? 'http://localhost:5000'
+function requireEnv(name: string, value: string | undefined) {
+  if (!value) {
+    throw new Error(`${name} is not set. Set ${name} in your environment (Vite .env) to point to the auth backend.`)
+  }
+  return value
+}
+
+const AUTH_BASE = requireEnv('VITE_AUTH_BASE_URL', import.meta.env.VITE_AUTH_BASE_URL)
 const AUTH_KEY = 'zerobroker-user'
 const OFFLINE_ERROR = 'Authentication service unavailable.'
 
