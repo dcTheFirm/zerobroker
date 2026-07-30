@@ -24,10 +24,17 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-The frontend is configured to interact with two backend services:
+The frontend is configured to interact with several backend services:
 
-- `VITE_API_BASE_URL` for property data (default: `http://localhost:4000`)
+- `VITE_HOME_BASE_URL` for home section data (default: `http://localhost:4001`)
+- `VITE_RENT_BASE_URL` for rent section data (default: `http://localhost:4002`)
+- `VITE_BUY_BASE_URL` for buy section data (default: `http://localhost:4003`)
+- `VITE_SEARCH_BASE_URL` for search results (default: `http://localhost:4004`)
 - `VITE_AUTH_BASE_URL` for auth operations (default: `http://localhost:5000`)
+
+Copy `.env.example` to `.env` inside the `front-end/` folder to override these values locally.
+
+The frontend also uses offline-ready fallbacks so the app remains usable when one service is temporarily unavailable.
 
 ## Scripts
 
