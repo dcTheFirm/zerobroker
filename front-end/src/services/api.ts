@@ -2,12 +2,17 @@ import type { Property, SearchFilters, ListingType } from '../types/property'
 import { cities as localCities, properties as localProperties, formatPrice } from '../data/properties'
 import { defaultFilters, filterProperties } from '../utils/search'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000'
+const HOME_BASE = import.meta.env.VITE_HOME_BASE_URL ?? 'http://localhost:4001'
+const RENT_BASE = import.meta.env.VITE_RENT_BASE_URL ?? 'http://localhost:4002'
+const BUY_BASE = import.meta.env.VITE_BUY_BASE_URL ?? 'http://localhost:4003'
+const SEARCH_BASE = import.meta.env.VITE_SEARCH_BASE_URL ?? 'http://localhost:4004'
 
-async function fetchApi<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, options)
+async function fetchApi<T>(base: string, path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${base}${path}`, options)
   if (!response.ok) {
-    throw new Error(`Network response was not ok: ${response.status}`)
+    const payload = await response.json().catch(() => null)
+    const message = payload?.error ?? `Network response was not ok: ${response.status}`
+    throw new Error(message)
   }
   return response.json()
 }
@@ -25,7 +30,7 @@ function toSearchParams(filters: SearchFilters) {
 
 export async function getCities(): Promise<string[]> {
   try {
-    const payload = await fetchApi<{ data: string[] }>('/api/properties/cities')
+    const payload = await fetchApi<{ data: string[] }>(HOME_BASE, '/api/home/cities')
     return payload.data
   } catch {
     return [...localCities]
@@ -34,7 +39,7 @@ export async function getCities(): Promise<string[]> {
 
 export async function getFeaturedProperties(limit = 4): Promise<Property[]> {
   try {
-    const payload = await fetchApi<{ data: Property[] }>('/api/properties/featured')
+    const payload = await fetchApi<{ data: Property[] }>(HOME_BASE, `/api/home/featured?limit=${limit}`)
     return payload.data
   } catch {
     return localProperties.filter((property) => property.featured).slice(0, limit)
@@ -44,7 +49,7 @@ export async function getFeaturedProperties(limit = 4): Promise<Property[]> {
 export async function getAllProperties(filters: SearchFilters = defaultFilters): Promise<Property[]> {
   try {
     const params = toSearchParams(filters)
-    const payload = await fetchApi<{ data: Property[] }>(`/api/search?${params.toString()}`)
+    const payload = await fetchApi<{ data: Property[] }>(SEARCH_BASE, `/api/search?${params.toString()}`)
     return payload.data
   } catch {
     return filterProperties(localProperties, filters)
@@ -56,8 +61,16 @@ export async function listProperties(filters: SearchFilters, page = 1, limit = 1
     const params = toSearchParams(filters)
     params.set('page', String(page))
     params.set('limit', String(limit))
-    const payload = await fetchApi<{ data: Property[] }>(`/api/properties?${params.toString()}`)
-    return payload
+
+    if (filters.type === 'buy') {
+      return await fetchApi<{ data: Property[] }>(BUY_BASE, `/api/buy/properties?${params.toString()}`)
+    }
+
+    if (filters.type === 'rent') {
+      return await fetchApi<{ data: Property[] }>(RENT_BASE, `/api/rent/properties?${params.toString()}`)
+    }
+
+    return await fetchApi<{ data: Property[] }>(SEARCH_BASE, `/api/search?${params.toString()}`)
   } catch {
     const filtered = filterProperties(localProperties, filters)
     const start = (page - 1) * limit
@@ -71,16 +84,19 @@ export async function getPropertyById(id: string | undefined | null): Promise<Pr
   }
 
   try {
-    const payload = await fetchApi<{ data: Property }>(`/api/properties/${id}`)
+    const payload = await fetchApi<{ data: Property }>(SEARCH_BASE, `/api/search?id=${encodeURIComponent(id)}`)
     return payload.data
   } catch {
     return localProperties.find((property) => property.id === id) ?? null
   }
 }
 
-export async function submitContactRequest(propertyId: string, message: string): Promise<{ success: boolean; message: string }> {
+export async function submitContactRequest(property: Property, message: string): Promise<{ success: boolean; message: string }> {
+  const base = property.type === 'buy' ? BUY_BASE : RENT_BASE
+  const endpoint = `/${property.type}/properties/${property.id}/contact`
+
   try {
-    await fetchApi(`/api/properties/${propertyId}/contact`, {
+    await fetchApi(base, endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
@@ -94,14 +110,17 @@ export async function submitContactRequest(propertyId: string, message: string):
   }
 }
 
-export async function submitVisitRequest(propertyId: string, details: {
+export async function submitVisitRequest(property: Property, details: {
   name: string
   email: string
   date: string
   time: string
 }): Promise<{ success: boolean; message: string }> {
+  const base = property.type === 'buy' ? BUY_BASE : RENT_BASE
+  const endpoint = `/${property.type}/properties/${property.id}/visit`
+
   try {
-    await fetchApi(`/api/properties/${propertyId}/visit`, {
+    await fetchApi(base, endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(details),
@@ -128,7 +147,8 @@ export async function submitPropertyListing(listing: {
   tags: string[]
 }): Promise<{ success: boolean; message: string }> {
   try {
-    await fetchApi('/api/properties', {
+    const base = listing.type === 'buy' ? BUY_BASE : RENT_BASE
+    await fetchApi(base, `/${listing.type}/properties`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(listing),

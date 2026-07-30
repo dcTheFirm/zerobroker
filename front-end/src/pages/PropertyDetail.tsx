@@ -45,7 +45,7 @@ export function PropertyDetail() {
     if (!property) {
       return
     }
-    const response = await submitContactRequest(property.id, contactMessage)
+    const response = await submitContactRequest(property, contactMessage)
     setMessage(response.message)
   }
 
@@ -60,7 +60,7 @@ export function PropertyDetail() {
       return
     }
 
-    const response = await submitVisitRequest(property.id, {
+    const response = await submitVisitRequest(property, {
       name: visitName,
       email: visitEmail,
       date: visitDate,
