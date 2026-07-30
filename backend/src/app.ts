@@ -3,8 +3,9 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import { z } from 'zod'
-import { getAllProperties, getFeaturedProperties, getPropertyById, listProperties } from './services/propertyService.js'
+import { getAllProperties, getCities, getFeaturedProperties, getPropertyById, listProperties } from './services/propertyService.js'
 import type { ListingType, SearchFilters } from './types/property.js'
+import type { RequestHandler } from 'express'
 
 const app = express()
 
@@ -24,11 +25,15 @@ const searchQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
 })
 
+const asyncHandler = (handler: RequestHandler): RequestHandler => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next)
+}
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'zero-broker-backend' })
 })
 
-app.get('/api/properties', (req, res) => {
+app.get('/api/properties', asyncHandler(async (req, res) => {
   const parsed = searchQuerySchema.safeParse(req.query)
 
   if (!parsed.success) {
@@ -47,28 +52,28 @@ app.get('/api/properties', (req, res) => {
   const page = parsed.data.page ?? 1
   const limit = parsed.data.limit ?? 12
 
-  return res.json(listProperties(filters, page, limit))
-})
+  return res.json(await listProperties(filters, page, limit))
+}))
 
-app.get('/api/properties/featured', (_req, res) => {
-  res.json({ data: getFeaturedProperties(4) })
-})
+app.get('/api/properties/featured', asyncHandler(async (_req, res) => {
+  res.json({ data: await getFeaturedProperties(4) })
+}))
 
-app.get('/api/properties/cities', (_req, res) => {
-  res.json({ data: ['Mumbai', 'Bangalore', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad'] })
-})
+app.get('/api/properties/cities', asyncHandler(async (_req, res) => {
+  res.json({ data: await getCities() })
+}))
 
-app.get('/api/properties/:id', (req, res) => {
-  const property = getPropertyById(req.params.id)
+app.get('/api/properties/:id', asyncHandler(async (req, res) => {
+  const property = await getPropertyById(String(req.params.id))
 
   if (!property) {
     return res.status(404).json({ error: 'Property not found' })
   }
 
   return res.json({ data: property })
-})
+}))
 
-app.get('/api/search', (req, res) => {
+app.get('/api/search', asyncHandler(async (req, res) => {
   const parsed = searchQuerySchema.safeParse(req.query)
 
   if (!parsed.success) {
@@ -84,11 +89,16 @@ app.get('/api/search', (req, res) => {
     bedrooms: parsed.data.bedrooms ?? null,
   }
 
-  return res.json({ data: getAllProperties(filters) })
-})
+  return res.json({ data: await getAllProperties(filters) })
+}))
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' })
+})
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(error)
+  res.status(500).json({ error: 'Internal server error' })
 })
 
 export default app
