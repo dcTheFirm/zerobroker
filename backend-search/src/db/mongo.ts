@@ -4,13 +4,13 @@ let client: MongoClient | null = null
 let connectPromise: Promise<MongoClient> | null = null
 
 export function isMongoConfigured() {
-  return Boolean(process.env.MONGODB_URI)
+  return Boolean(process.env.MONGODB_URI ?? process.env.MONGO_URI)
 }
 
 export async function getCollection<T extends Document>(name: string): Promise<Collection<T> | null> {
-  const uri = process.env.MONGODB_URI
+  const uri = process.env.MONGODB_URI ?? process.env.MONGO_URI
   if (!uri) {
-    return null
+    throw new Error('MONGODB_URI (or MONGO_URI) is not set. Configure MongoDB connection string in your environment.')
   }
 
   if (!connectPromise) {

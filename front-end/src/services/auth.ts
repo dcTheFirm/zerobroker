@@ -63,12 +63,8 @@ export async function signIn(email: string, password: string): Promise<{ user: A
     emitAuthUpdate()
     return { user, message: payload.message ?? 'Signed in successfully.' }
   } catch (error) {
-    if (isOfflineError(error)) {
-      const user = { email }
-      localStorage.setItem(AUTH_KEY, JSON.stringify(user))
-      emitAuthUpdate()
-      return { user, message: 'Signed in with frontend-only mode. Backend auth will connect soon.' }
-    }
+    // Do not fall back to frontend-only/local sign-in when the auth backend is unavailable.
+    // Surface the error to the caller so the UI can show a proper failure.
     throw error
   }
 }
@@ -86,12 +82,8 @@ export async function signUp(email: string, password: string): Promise<{ user: A
     emitAuthUpdate()
     return { user, message: payload.message ?? 'Account created successfully.' }
   } catch (error) {
-    if (isOfflineError(error)) {
-      const user = { email }
-      localStorage.setItem(AUTH_KEY, JSON.stringify(user))
-      emitAuthUpdate()
-      return { user, message: 'Signed up with frontend-only mode. Backend auth will connect soon.' }
-    }
+    // Do not fall back to frontend-only/local sign-up when the auth backend is unavailable.
+    // Surface the error to the caller so the UI can show a proper failure.
     throw error
   }
 }
