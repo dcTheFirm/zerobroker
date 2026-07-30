@@ -24,6 +24,11 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+The frontend is configured to interact with two backend services:
+
+- `VITE_API_BASE_URL` for property data (default: `http://localhost:4000`)
+- `VITE_AUTH_BASE_URL` for auth operations (default: `http://localhost:5000`)
+
 ## Scripts
 
 | Command         | Description              |

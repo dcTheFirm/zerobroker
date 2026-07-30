@@ -68,9 +68,14 @@ export function Header() {
               </button>
             </>
           ) : (
-            <Link to="/signin" className="btn btn--ghost">
-              Sign In
-            </Link>
+            <>
+              <Link to="/signin" className="btn btn--ghost">
+                Sign In
+              </Link>
+              <Link to="/signup" className="btn btn--ghost">
+                Sign Up
+              </Link>
+            </>
           )}
           <Link to="/list-property" className="btn btn--outline">
             List Property

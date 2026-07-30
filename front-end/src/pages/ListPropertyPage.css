@@ -20,6 +20,15 @@
   color: var(--color-text-muted);
 }
 
+.list-property-page__alert {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
 .property-form {
   display: grid;
   gap: 1rem;
