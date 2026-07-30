@@ -5,6 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:home": "cd ./home-app && vite --port 5173",
+    "dev:rent": "cd ./rent-app && vite --port 5174",
+    "dev:buy": "cd ./buy-app && vite --port 5175",
+    "dev:search": "cd ./search-app && vite --port 5176",
+    "dev:auth": "cd ./auth-app && vite --port 5177",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

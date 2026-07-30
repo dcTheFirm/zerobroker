@@ -6,12 +6,42 @@ import { z } from 'zod'
 import { getCollection } from './db/mongo.js'
 import { createRentProperty, getRentPropertyById, listRentProperties } from './services/propertyService.js'
 import type { RequestHandler } from 'express'
+import path from 'node:path'
+import fs from 'node:fs/promises'
+import crypto from 'node:crypto'
 
 const app = express()
 app.use(helmet())
 app.use(cors())
 app.use(morgan('dev'))
 app.use(express.json())
+
+// Serve uploaded images
+const uploadsDir = path.resolve(process.cwd(), 'uploads')
+app.use('/uploads', express.static(uploadsDir))
+
+async function ensureUploadsDir() {
+  try {
+    await fs.mkdir(uploadsDir, { recursive: true })
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function saveDataUrlImage(dataUrl: string) {
+  // dataUrl format: data:<mime>;base64,<data>
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.]+);base64,(.+)$/)
+  if (!match) return null
+  const mime = match[1]
+  const b64 = match[2]
+  const ext = mime.split('/')[1]
+  const filename = `${crypto.randomUUID()}.${ext}`
+  await ensureUploadsDir()
+  const buffer = Buffer.from(b64, 'base64')
+  const filePath = path.join(uploadsDir, filename)
+  await fs.writeFile(filePath, buffer)
+  return filename
+}
 
 const searchQuerySchema = z.object({
   query: z.string().optional(),
@@ -32,7 +62,18 @@ const listingSchema = z.object({
   bathrooms: z.coerce.number().int().min(1),
   sqft: z.coerce.number().int().min(100),
   price: z.coerce.number().min(1),
-  image: z.string().url(),
+  // image may be a remote URL or a data URL (uploaded file encoded as base64)
+  image: z.string().refine((val) => {
+    if (typeof val !== 'string') return false
+    if (val.startsWith('data:image/')) return true
+    try {
+      // treat as URL
+      new URL(val)
+      return true
+    } catch {
+      return false
+    }
+  }, { message: 'image must be a URL or a data:image/... base64 string' }),
   tags: z.array(z.string()).optional(),
 })
 
@@ -91,7 +132,19 @@ app.post('/api/rent/properties', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Invalid listing details.' })
   }
 
-  const property = await createRentProperty(parsed.data)
+  let listing = parsed.data
+
+  // If image is a data URL, save it to uploads and replace with a served URL
+  if (typeof listing.image === 'string' && listing.image.startsWith('data:image/')) {
+    const filename = await saveDataUrlImage(listing.image)
+    if (filename) {
+      const host = req.get('host')
+      const proto = req.protocol
+      listing = { ...listing, image: `${proto}://${host}/uploads/${filename}` }
+    }
+  }
+
+  const property = await createRentProperty(listing)
   return res.status(201).json({ data: property, message: 'Rent property listing submitted successfully.' })
 }))
 
