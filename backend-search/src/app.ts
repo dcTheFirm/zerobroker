@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import { z } from 'zod'
 import { findProperties, getPropertyById } from './services/searchService.js'
+import type { RequestHandler } from 'express'
 
 const app = express()
 app.use(helmet())
@@ -23,18 +24,22 @@ const searchQuerySchema = z.object({
   id: z.string().optional(),
 })
 
+const asyncHandler = (handler: RequestHandler): RequestHandler => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next)
+}
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'zero-broker-search' })
 })
 
-app.get('/api/search', (req, res) => {
+app.get('/api/search', asyncHandler(async (req, res) => {
   const parsed = searchQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() })
   }
 
   if (parsed.data.id) {
-    const property = getPropertyById(parsed.data.id)
+    const property = await getPropertyById(parsed.data.id)
     if (!property) {
       return res.status(404).json({ error: 'Property not found' })
     }
@@ -52,14 +57,19 @@ app.get('/api/search', (req, res) => {
 
   const page = parsed.data.page ?? 1
   const limit = parsed.data.limit ?? 12
-  const allResults = findProperties(filters)
+  const allResults = await findProperties(filters)
   const start = (page - 1) * limit
 
   res.json({ data: allResults.slice(start, start + limit), total: allResults.length, page, limit })
-})
+}))
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' })
+})
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(error)
+  res.status(500).json({ error: 'Internal server error' })
 })
 
 export default app

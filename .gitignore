@@ -7,10 +7,33 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Dependencies
+node_modules/
+
+# Build output
 dist
 dist-ssr
+
+# Test and tool output
+coverage/
+.nyc_output/
+.vitest/
+.vite/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!front-end/.env.example
 *.local
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+service-account*.json
+credentials*.json
+secrets*.json
 
 # Editor directories and files
 .vscode/*

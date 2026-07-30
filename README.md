@@ -58,6 +58,30 @@ npm install
 npm run dev
 ```
 
+## MongoDB Atlas
+
+All backend services read `MONGODB_URI` and `MONGODB_DB_NAME`. Put these values in the root `.env` file, or in each service's own `.env` file if you prefer to run services independently.
+
+```bash
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-host>/zero_broker?retryWrites=true&w=majority
+MONGODB_DB_NAME=zero_broker
+```
+
+When `MONGODB_URI` is present, the services use Atlas collections:
+
+- `properties` for home, rent, buy, search, and the original backend
+- `users` for auth
+- `property_requests` for contact and visit requests
+
+Without `MONGODB_URI`, the services fall back to the existing sample data so local tests and first-time setup still work.
+
+Seed the Atlas `properties` collection from the sample listings:
+
+```bash
+cd backend
+npm run seed:atlas
+```
+
 By default the frontend uses environment variables to connect each section independently:
 
 - `VITE_HOME_BASE_URL` for home data
