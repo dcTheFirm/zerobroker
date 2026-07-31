@@ -53,10 +53,6 @@ async function fetchAuth<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json()
 }
 
-function isOfflineError(error: unknown): boolean {
-  return error instanceof Error && error.message === OFFLINE_ERROR
-}
-
 export async function signIn(email: string, password: string): Promise<{ user: AuthUser; message: string }> {
   try {
     const payload = await fetchAuth<{ user: AuthUser; message?: string }>('/api/auth/signin', {
