@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: zero-broker
-        image: dcthefirm/frontend:f3991ae7cb05cf11cac0ec5bdcf9d971898a1473
+        image: dcthefirm/frontend:4e1e9c3e03e27e2a95724f13f8cb24a231108c5a
         ports:
         - containerPort: 80

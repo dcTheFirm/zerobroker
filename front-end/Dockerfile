@@ -5,7 +5,9 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+
+# modern version of npm install that is faster and more reliable
+RUN npm ci    
 
 COPY . .
 
