@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zerobroker-frontend-deployment
+  namespace: zero-broker
   labels:
     app: zerobroker-frontend
 spec:
