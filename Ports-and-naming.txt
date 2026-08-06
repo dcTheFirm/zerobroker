@@ -65,19 +65,12 @@ zero-broker
 Frontend:
 
 Deployment:
-zerobroker-frontend-deployment
+zerobroker-frontend-deployment  2000
 
 
 Service:
-zerobroker-frontend-service
-
-
-Container:
-zero-broker-frontend
-
-
-Port:
-80
+zerobroker-frontend-service     2001
+ 
 
 
 
@@ -87,29 +80,21 @@ Backend Services:
 1. Auth Service
 
 Deployment:
-zerobroker-auth-deployment
+zerobroker-auth-deployment   5000
 
 Service:
-zerobroker-auth-service
-
-
-Container:
-zerobroker-auth
-
-
-Port:
-5000
+zerobroker-auth-service    5001
 
 
 
 2. Home Service
 
-Deployment:
+Deployment:                  5001
 zerobroker-home-deployment
 
 
-Service:
-zerobroker-home-service
+Service:                     6001
+zerobroker-home-service 
 
 
 Container:

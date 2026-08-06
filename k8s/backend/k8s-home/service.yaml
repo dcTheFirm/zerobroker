@@ -7,7 +7,7 @@ spec:
     app: zerobroker-home-backend
   ports:
     - protocol: TCP
-      port: 
+      port: 4000
       targetPort: 4001
 
 
