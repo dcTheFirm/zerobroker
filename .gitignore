@@ -34,6 +34,7 @@ coverage/
 service-account*.json
 credentials*.json
 secrets*.json
+mongo-secrect.yaml
 
 # Editor directories and files
 .vscode/*
