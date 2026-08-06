@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zerobroker-home-backend
+  namespace: zero-broker
+  labels:
+    app: zerobroker-home-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zerobroker-home-backend
+  template:
+    metadata:
+      labels:
+        app: zerobroker-home-backend
+    spec:
+      containers:
+      - name: zerobroker-home-backend
+        image: dcthefirm/backend-home:4e1e9c3e03e27e2a95724f13f8cb24a231108c5a
+        ports:
+        - containerPort: 4001

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zerobroker-home-service
+spec:
+  selector:
+    app: zerobroker-home-backend
+  ports:
+    - protocol: TCP
+      port: 
+      targetPort: 4001
+
+
