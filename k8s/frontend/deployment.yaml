@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zero-broker-frontend-deployment
+  name: zerobroker-frontend-deployment
   labels:
-    app: zero-broker
+    app: zerobroker-frontend
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: zero-broker
+      app: zerobroker-frontend
   template:
     metadata:
       labels:
-        app: zero-broker
+        app: zerobroker-frontend
     spec:
       containers:
-      - name: zero-broker
+      - name: zerobroker-frontend
         image: dcthefirm/frontend:4e1e9c3e03e27e2a95724f13f8cb24a231108c5a
         ports:
         - containerPort: 80
