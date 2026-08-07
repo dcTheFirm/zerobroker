@@ -1,0 +1,60 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zerobroker-ingress
+  namespace: zero-broker
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: zerobroker.local ## This is fake local domain, you can change it to your own domain
+      http:
+        paths:
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-auth
+                port:
+                  number: 5000
+
+          - path: /api/home
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-home
+                port:
+                  number: 5000
+
+          - path: /api/rent
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-rent
+                port:
+                  number: 5000
+
+          - path: /api/buy
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-buy
+                port:
+                  number: 5000
+
+          - path: /api/search
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-search
+                port:
+                  number: 5000
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: front-end
+                port:
+                  number: 80
