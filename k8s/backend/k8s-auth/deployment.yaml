@@ -24,7 +24,7 @@ spec:
             - configMapRef:
                 name: auth-configmap
             - secretRef:
-                name: mongo-secrect
+                name: mongo-secret
           resources:
             requests:
               cpu: 100m

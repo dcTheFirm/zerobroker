@@ -5,12 +5,15 @@ metadata:
   namespace: zero-broker
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web
+
 spec:
   ingressClassName: traefik
+
   rules:
-    - host: zerobroker.local ## This is fake local domain, you can change it to your own domain
+    - host: zerobroker.local
       http:
         paths:
+
           - path: /api/auth
             pathType: Prefix
             backend:
@@ -25,7 +28,7 @@ spec:
               service:
                 name: backend-home
                 port:
-                  number: 5000
+                  number: 4001
 
           - path: /api/rent
             pathType: Prefix
@@ -33,7 +36,7 @@ spec:
               service:
                 name: backend-rent
                 port:
-                  number: 5000
+                  number: 4002
 
           - path: /api/buy
             pathType: Prefix
@@ -41,7 +44,7 @@ spec:
               service:
                 name: backend-buy
                 port:
-                  number: 5000
+                  number: 4003
 
           - path: /api/search
             pathType: Prefix
@@ -49,12 +52,12 @@ spec:
               service:
                 name: backend-search
                 port:
-                  number: 5000
+                  number: 4004
 
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: front-end
+                name: zerobroker-frontend-service
                 port:
                   number: 80
