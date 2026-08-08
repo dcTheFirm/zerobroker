@@ -14,7 +14,7 @@ spec:
       http:
         paths:
 
-          - path: /api/auth
+          - path: /auth
             pathType: Prefix
             backend:
               service:
@@ -22,7 +22,7 @@ spec:
                 port:
                   number: 5000
 
-          - path: /api/home
+          - path: /home
             pathType: Prefix
             backend:
               service:
@@ -30,7 +30,7 @@ spec:
                 port:
                   number: 4001
 
-          - path: /api/rent
+          - path: /rent
             pathType: Prefix
             backend:
               service:
@@ -38,7 +38,7 @@ spec:
                 port:
                   number: 4002
 
-          - path: /api/buy
+          - path: /buy
             pathType: Prefix
             backend:
               service:
@@ -46,7 +46,7 @@ spec:
                 port:
                   number: 4003
 
-          - path: /api/search
+          - path: /search
             pathType: Prefix
             backend:
               service:

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-search
+  namespace: zero-broker
+spec:
+  selector:
+    app: backend-search
+  ports:
+    - port: 4004
+      targetPort: 4004
+  type: ClusterIP

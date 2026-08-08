@@ -6,7 +6,7 @@ metadata:
   labels:
     app: zerobroker-frontend
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: zerobroker-frontend

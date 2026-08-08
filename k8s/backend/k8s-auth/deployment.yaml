@@ -21,8 +21,8 @@ spec:
           ports:
             - containerPort: 5000
           envFrom:
-            - configMapRef:
-                name: auth-configmap
+           # - configMapRef:
+              #  name: auth-configmap
             - secretRef:
                 name: mongo-secret
           resources:
