@@ -14,11 +14,11 @@ COPY . .
 # These become part of the built JS bundle (Vite inlines import.meta.env.VITE_* at build time),
 # so they must point to URLs reachable from the END USER'S BROWSER, not container-internal hostnames.
 # Override at build time with --build-arg if deploying somewhere other than localhost.
-ARG VITE_HOME_BASE_URL=http://localhost:4001
-ARG VITE_RENT_BASE_URL=http://localhost:4002
-ARG VITE_BUY_BASE_URL=http://localhost:4003
-ARG VITE_SEARCH_BASE_URL=http://localhost:4004
-ARG VITE_AUTH_BASE_URL=http://localhost:5000
+ARG VITE_HOME_BASE_URL=
+ARG VITE_RENT_BASE_URL=
+ARG VITE_BUY_BASE_URL=
+ARG VITE_SEARCH_BASE_URL=
+ARG VITE_AUTH_BASE_URL=
 
 ENV VITE_HOME_BASE_URL=$VITE_HOME_BASE_URL \
     VITE_RENT_BASE_URL=$VITE_RENT_BASE_URL \

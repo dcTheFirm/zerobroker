@@ -1,5 +1,5 @@
 function requireEnv(name: string, value: string | undefined) {
-  if (!value) {
+  if (value === undefined) {
     throw new Error(`${name} is not set. Set ${name} in your environment (Vite .env) to point to the auth backend.`)
   }
   return value
