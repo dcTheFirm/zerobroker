@@ -1,9 +1,12 @@
-name: Build and Push to Docker Hub
+name: Build, Push and GitOps Update
 
 on:
   push:
     branches:
       - CI-CD
+
+permissions:
+  contents: write
 
 jobs:
   build-and-push:
@@ -25,7 +28,9 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # -------------------------
       # Frontend
+      # -------------------------
       - name: Build and Push Frontend
         uses: docker/build-push-action@v6
         with:
@@ -38,7 +43,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Backend Main
+      # -------------------------
+      # Backend
+      # -------------------------
       - name: Build and Push Backend
         uses: docker/build-push-action@v6
         with:
@@ -51,7 +58,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -------------------------
       # Backend Auth
+      # -------------------------
       - name: Build and Push Backend Auth
         uses: docker/build-push-action@v6
         with:
@@ -64,7 +73,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -------------------------
       # Backend Buy
+      # -------------------------
       - name: Build and Push Backend Buy
         uses: docker/build-push-action@v6
         with:
@@ -77,7 +88,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -------------------------
       # Backend Home
+      # -------------------------
       - name: Build and Push Backend Home
         uses: docker/build-push-action@v6
         with:
@@ -90,7 +103,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -------------------------
       # Backend Rent
+      # -------------------------
       - name: Build and Push Backend Rent
         uses: docker/build-push-action@v6
         with:
@@ -103,7 +118,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # -------------------------
       # Backend Search
+      # -------------------------
       - name: Build and Push Backend Search
         uses: docker/build-push-action@v6
         with:
@@ -115,3 +132,63 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/backend-search:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # =====================================================
+      # UPDATE KUBERNETES MANIFESTS
+      # =====================================================
+
+      - name: Update Kubernetes image tags
+        run: |
+          TAG="${GITHUB_SHA}"
+
+          sed -i "s|image: dcthefirm/frontend:.*|image: dcthefirm/frontend:${TAG}|" \
+            k8s/frontend/deployment.yaml
+
+          sed -i "s|image: dcthefirm/backend-auth:.*|image: dcthefirm/backend-auth:${TAG}|" \
+            k8s/backend/k8s-auth/deployment.yaml
+
+          sed -i "s|image: dcthefirm/backend-buy:.*|image: dcthefirm/backend-buy:${TAG}|" \
+            k8s/backend/k8s-buy/deployment.yaml
+
+          sed -i "s|image: dcthefirm/backend-home:.*|image: dcthefirm/backend-home:${TAG}|" \
+            k8s/backend/k8s-home/deployment.yaml
+
+          sed -i "s|image: dcthefirm/backend-rent:.*|image: dcthefirm/backend-rent:${TAG}|" \
+            k8s/backend/k8s-rent/deployment.yaml
+
+          sed -i "s|image: dcthefirm/backend-search:.*|image: dcthefirm/backend-search:${TAG}|" \
+            k8s/backend/k8s-search/deployment.yaml
+
+          # If you also have a main backend deployment:
+          if [ -f k8s/backend/deployment.yaml ]; then
+            sed -i "s|image: dcthefirm/backend:.*|image: dcthefirm/backend:${TAG}|" \
+              k8s/backend/deployment.yaml
+          fi
+
+      # =====================================================
+      # SHOW CHANGES
+      # =====================================================
+
+      - name: Show updated manifests
+        run: |
+          echo "Updated image references:"
+          grep -R "image:" k8s/
+
+      # =====================================================
+      # COMMIT MANIFEST CHANGES
+      # =====================================================
+
+      - name: Commit and push Kubernetes manifests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/
+
+          if git diff --cached --quiet; then
+            echo "No Kubernetes manifest changes."
+            exit 0
+          fi
+
+          git commit -m "chore: update images to ${GITHUB_SHA}"
+          git push
