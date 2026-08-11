@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: zerobroker-frontend
-        image: dcthefirm/frontend:testing
+        image: dcthefirm/frontend:f6e2c5e5f8d6115115698e22d85f1514fcdbf7ba
         ports:
         - containerPort: 80
