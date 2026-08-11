@@ -1,95 +1,353 @@
-# ZeroBroker Workspace
+# ZeroBroker --- Traefik Ingress Setup
 
-This repository contains a microservices architecture with independent services for auth, home data, rent listings, buy listings, and search.
+This document describes the Traefik Ingress Controller setup, internal
+service connectivity tests, project architecture, and Ingress path
+routing for the **ZeroBroker** Kubernetes application running on
+**Kind**.
 
-- `front-end/` contains the React Vite frontend application.
-- `backend-auth/` contains auth APIs for signup and signin.
-- `backend-home/` contains home section APIs for featured properties and cities.
-- `backend-rent/` contains rent section APIs for rental listings and details.
-- `backend-buy/` contains buy section APIs for sale listings and details.
-- `backend-search/` contains global search APIs used by the search page.
-- `backend/` remains available as the original property backend service.
+------------------------------------------------------------------------
 
-To work with the frontend project:
+## 1. Install Traefik Ingress Controller
 
-```bash
-cd front-end
-npm install
-npm run dev
+Traefik must be installed as the Ingress Controller before the
+application can be accessed through the configured Ingress routes.
+
+### Add the Traefik Helm Repository
+
+``` bash
+helm repo add traefik https://helm.traefik.io/traefik
+helm repo update
 ```
 
-To run the auth backend:
+### Install Traefik in the `zero-broker` Namespace
 
-```bash
-cd backend-auth
-npm install
-npm run dev
+``` bash
+helm install traefik traefik/traefik \
+  --namespace zero-broker \
+  --set ports.web.nodePort=30080 \
+  --set service.type=NodePort
 ```
 
-To run the home backend:
+### Verify the Installation
 
-```bash
-cd backend-home
-npm install
-npm run dev
+Check the Traefik pods:
+
+``` bash
+kubectl get pods -n zero-broker
 ```
 
-To run the rent backend:
+Check the Traefik service:
 
-```bash
-cd backend-rent
-npm install
-npm run dev
+``` bash
+kubectl get svc -n zero-broker
 ```
 
-To run the buy backend:
+Traefik exposes the HTTP entry point through **NodePort `30080`**.
 
-```bash
-cd backend-buy
-npm install
-npm run dev
+------------------------------------------------------------------------
+
+## 2. Test Services Directly from Inside the Cluster
+
+Before testing the application through Traefik, verify that all
+Kubernetes Services are reachable from inside the cluster.
+
+### Create a Temporary Test Pod
+
+If a test pod does not already exist, create one using the
+`curlimages/curl` image:
+
+``` bash
+kubectl run test \
+  --image=curlimages/curl \
+  -it \
+  --rm \
+  -n zero-broker \
+  -- sh
 ```
 
-To run the search backend:
+The `--rm` option automatically removes the pod when you exit the shell.
 
-```bash
-cd backend-search
-npm install
-npm run dev
+### Connect to an Existing Test Pod
+
+If a pod named `test` already exists:
+
+``` bash
+kubectl exec -it test -n zero-broker -- sh
 ```
 
-## MongoDB Atlas
+### Test Individual Services
 
-All backend services read `MONGODB_URI` and `MONGODB_DB_NAME`. Put these values in the root `.env` file, or in each service's own `.env` file if you prefer to run services independently.
+Run the following commands **inside the test pod**:
 
-```bash
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-host>/zero_broker?retryWrites=true&w=majority
-MONGODB_DB_NAME=zero_broker
+``` bash
+curl http://backend-auth:5000/health
+curl http://backend-home:4001/health
+curl http://backend-rent:4002/health
+curl http://backend-buy:4003/health
+curl http://backend-search:4004/health
+curl http://zerobroker-frontend-service:80
 ```
 
-When `MONGODB_URI` is present, the services use Atlas collections:
+### Test All Services at Once
 
-- `properties` for home, rent, buy, search, and the original backend
-- `users` for auth
-- `property_requests` for contact and visit requests
-
-Without `MONGODB_URI`, the services fall back to the existing sample data so local tests and first-time setup still work.
-
-Seed the Atlas `properties` collection from the sample listings:
-
-```bash
-cd backend
-npm run seed:atlas
+``` bash
+curl http://backend-auth:5000/health && \
+curl http://backend-home:4001/health && \
+curl http://backend-rent:4002/health && \
+curl http://backend-buy:4003/health && \
+curl http://backend-search:4004/health && \
+curl http://zerobroker-frontend-service:80
 ```
 
-By default the frontend uses environment variables to connect each section independently:
+If all commands succeed, the Kubernetes Services are communicating
+correctly inside the cluster.
 
-- `VITE_HOME_BASE_URL` for home data
-- `VITE_RENT_BASE_URL` for rent listings
-- `VITE_BUY_BASE_URL` for buy listings
-- `VITE_SEARCH_BASE_URL` for search
-- `VITE_AUTH_BASE_URL` for auth
+------------------------------------------------------------------------
 
-This setup keeps each major service independent: if one service is unavailable, the others can still respond locally or continue to work.
+## 3. Project Architecture
 
-The frontend also supports offline-ready fallback behavior so the UI stays responsive if one backend service is unavailable.
+The application is accessed by the user's browser through the Traefik
+Ingress Controller.
+
+``` text
+User Browser
+     |
+     v
+zerobroker.local:30080
+     |
+     v
+/etc/hosts
+     |
+     | resolves to 172.18.0.2
+     v
+Kind Cluster Node
+     |
+     v
+Traefik Ingress Controller
+     |
+     | Port: 30080
+     |
+     v
+Reads Ingress Rules
+     |
+     +------------------------------+
+     |                              |
+     |  /                           | --> zerobroker-frontend-service:80
+     |  /api/auth                   | --> backend-auth:5000
+     |  /api/home                   | --> backend-home:4001
+     |  /api/rent                   | --> backend-rent:4002
+     |  /api/buy                    | --> backend-buy:4003
+     |  /api/search                 | --> backend-search:4004
+     |                              |
+     +------------------------------+
+                    |
+                    v
+          Individual Services
+                    |
+                    v
+              MongoDB Atlas
+                (External)
+```
+
+### Request Flow
+
+The overall request flow is:
+
+``` text
+Browser
+  |
+  | HTTP request
+  v
+zerobroker.local:30080
+  |
+  v
+Kind Node
+  |
+  v
+Traefik
+  |
+  |-- /              --> Frontend
+  |-- /api/auth      --> Auth Backend
+  |-- /api/home      --> Home Backend
+  |-- /api/rent      --> Rent Backend
+  |-- /api/buy       --> Buy Backend
+  |-- /api/search    --> Search Backend
+  |
+  v
+Backend Services
+  |
+  v
+MongoDB Atlas
+```
+
+------------------------------------------------------------------------
+
+## 4. Ingress Path Communication
+
+The Ingress resource uses the host:
+
+``` text
+zerobroker.local
+```
+
+Traefik matches incoming requests based on the URL path and forwards
+them to the corresponding Kubernetes Service.
+
+  Path            Path Type   Kubernetes Service                  Port
+  --------------- ----------- ------------------------------- --------
+  `/`             Prefix      `zerobroker-frontend-service`       `80`
+  `/api/auth`     Prefix      `backend-auth`                    `5000`
+  `/api/home`     Prefix      `backend-home`                    `4001`
+  `/api/rent`     Prefix      `backend-rent`                    `4002`
+  `/api/buy`      Prefix      `backend-buy`                     `4003`
+  `/api/search`   Prefix      `backend-search`                  `4004`
+
+### Routing Diagram
+
+``` text
+Host: zerobroker.local
+        |
+        v
+      Traefik
+        |
+        +------------------------------------------+
+        |                                          |
+        |  Path: /                                 |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> zerobroker-frontend-service:80
+        |                                          |
+        |  Path: /api/auth                         |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> backend-auth:5000             |
+        |                                          |
+        |  Path: /api/home                         |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> backend-home:4001             |
+        |                                          |
+        |  Path: /api/rent                         |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> backend-rent:4002             |
+        |                                          |
+        |  Path: /api/buy                          |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> backend-buy:4003              |
+        |                                          |
+        |  Path: /api/search                       |
+        |  Prefix                                  |
+        |       |                                  |
+        |       +--> backend-search:4004           |
+        |                                          |
+        +------------------------------------------+
+```
+
+------------------------------------------------------------------------
+
+## 5. Expected Application Access
+
+Once Traefik and the Ingress resource are configured correctly, the
+application should be accessible through:
+
+``` text
+http://zerobroker.local:30080
+```
+
+The `/etc/hosts` file should contain an entry mapping `zerobroker.local`
+to the Kind node IP:
+
+``` text
+172.18.0.2 zerobroker.local
+```
+
+You can verify the mapping with:
+
+``` bash
+getent hosts zerobroker.local
+```
+
+------------------------------------------------------------------------
+
+## 6. Useful Verification Commands
+
+### Check All Resources
+
+``` bash
+kubectl get all -n zero-broker
+```
+
+### Check Ingress
+
+``` bash
+kubectl get ingress -n zero-broker
+```
+
+### Describe Ingress
+
+``` bash
+kubectl describe ingress -n zero-broker
+```
+
+### Check Traefik Logs
+
+``` bash
+kubectl logs -n zero-broker \
+  -l app.kubernetes.io/name=traefik
+```
+
+### Check Services
+
+``` bash
+kubectl get svc -n zero-broker
+```
+
+### Check Pods
+
+``` bash
+kubectl get pods -n zero-broker -o wide
+```
+
+------------------------------------------------------------------------
+
+## Architecture Summary
+
+``` text
+                         ┌──────────────────────┐
+                         │     User Browser      │
+                         └──────────┬───────────┘
+                                    │
+                                    │ HTTP
+                                    v
+                         ┌──────────────────────┐
+                         │ zerobroker.local     │
+                         │ Port: 30080          │
+                         └──────────┬───────────┘
+                                    │
+                                    v
+                         ┌──────────────────────┐
+                         │   Kind Cluster Node  │
+                         └──────────┬───────────┘
+                                    │
+                                    v
+                         ┌──────────────────────┐
+                         │       Traefik        │
+                         │  Ingress Controller  │
+                         └──────────┬───────────┘
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              │                     │                     │
+              v                     v                     v
+        ┌──────────┐          ┌──────────┐          ┌──────────┐
+        │ Frontend │          │ Backend  │          │ Backend  │
+        │   :80    │          │ Services │          │ Services │
+        └──────────┘          └────┬─────┘          └──────────┘
+                                   │
+                                   v
+                            ┌──────────────┐
+                            │ MongoDB Atlas│
+                            │  (External)  │
+                            └──────────────┘
+```

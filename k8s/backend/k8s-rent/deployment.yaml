@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-rent
+  namespace: zero-broker
+  labels:
+    app: backend-rent
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: backend-rent
+
+  template:
+    metadata:
+      labels:
+        app: backend-rent
+
+    spec:
+      containers:
+        - name: backend-rent
+          image: dcthefirm/backend-rent:2c9c27bbb7cff5fa58d3db464351b92bd7d6c3dc
+
+          ports:
+            - containerPort: 4002
+
+          envFrom:
+            # - configMapRef:
+            #     name: auth-configmap
+            - secretRef:
+                name: mongo-secret
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4002
+            initialDelaySeconds: 15
+            periodSeconds: 20

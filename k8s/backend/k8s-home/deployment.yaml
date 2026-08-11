@@ -1,22 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zerobroker-home-backend
+  name: backend-home
   namespace: zero-broker
   labels:
-    app: zerobroker-home-backend
+    app: backend-home
+
 spec:
   replicas: 2
+
   selector:
     matchLabels:
-      app: zerobroker-home-backend
+      app: backend-home
+
   template:
     metadata:
       labels:
-        app: zerobroker-home-backend
+        app: backend-home
+
     spec:
       containers:
-      - name: zerobroker-home-backend
-        image: dcthefirm/backend-home:4e1e9c3e03e27e2a95724f13f8cb24a231108c5a
-        ports:
-        - containerPort: 4001
+        - name: backend-home
+          image: dcthefirm/backend-home:2c9c27bbb7cff5fa58d3db464351b92bd7d6c3dc
+          ports:
+            - containerPort: 4001
+
+          envFrom:
+            # - configMapRef:
+            #     name: auth-configmap
+            - secretRef:
+                name: mongo-secret
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 15
+            periodSeconds: 20

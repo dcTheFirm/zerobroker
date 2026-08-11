@@ -3,7 +3,7 @@ import { formatPrice } from '../data/properties'
 import { defaultFilters } from '../utils/search'
 
 function requireEnv(name: string, value: string | undefined) {
-  if (!value) {
+  if (value === undefined) {
     throw new Error(`${name} is not set. Set ${name} in your environment (Vite .env) to point to the backend service.`)
   }
   return value

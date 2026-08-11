@@ -17,14 +17,14 @@ spec:
     spec:
       containers:
         - name: backend-auth
-          image: dcthefirm/backend-auth:4e1e9c3e03e27e2a95724f13f8cb24a231108c5a
+          image: dcthefirm/backend-auth:2c9c27bbb7cff5fa58d3db464351b92bd7d6c3dc
           ports:
             - containerPort: 5000
           envFrom:
-            - configMapRef:
-                name: auth-configmap
+           # - configMapRef:
+              #  name: auth-configmap
             - secretRef:
-                name: mongo-secrect
+                name: mongo-secret
           resources:
             requests:
               cpu: 100m
