@@ -3,7 +3,7 @@ name: Build, Push and GitOps Update
 on:
   push:
     branches:
-      - CI-CD
+      - agents/frontend-backend-fixes-ui-update
 
 permissions:
   contents: write
