@@ -7,6 +7,8 @@ import type { Property } from '../types/property'
 import { getAllProperties, getFeaturedProperties } from '../services/api'
 import './Home.css'
 
+const DEFAULT_CITY_IMAGE = 'https://images.unsplash.com/photo-1503264116251-35a269479413?w=600&q=80'
+
 const cityImages: Record<string, string> = {
   Mumbai: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=600&q=80',
   Bangalore: 'https://images.unsplash.com/photo-1596176530659-155891ed211c?w=600&q=80',
@@ -160,10 +162,11 @@ export function Home() {
                 className="city-card"
               >
                 <img
-                  src={cityImages[city]}
+                  src={cityImages[city?.trim()] ?? DEFAULT_CITY_IMAGE}
                   alt={city}
                   className="city-card__image"
                   loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_CITY_IMAGE }}
                 />
                 <div className="city-card__overlay">
                   <span className="city-card__name">{city}</span>

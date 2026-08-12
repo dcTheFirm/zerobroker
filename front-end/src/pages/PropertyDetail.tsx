@@ -45,8 +45,13 @@ export function PropertyDetail() {
     if (!property) {
       return
     }
-    const response = await submitContactRequest(property, contactMessage)
-    setMessage(response.message)
+    try {
+      const response = await submitContactRequest(property, contactMessage)
+      setMessage(response.message)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to send message right now.'
+      setMessage(`Error: ${msg}`)
+    }
   }
 
   const handleSchedule = async (event: FormEvent<HTMLFormElement>) => {
@@ -60,13 +65,18 @@ export function PropertyDetail() {
       return
     }
 
-    const response = await submitVisitRequest(property, {
-      name: visitName,
-      email: visitEmail,
-      date: visitDate,
-      time: visitTime,
-    })
-    setMessage(response.message)
+    try {
+      const response = await submitVisitRequest(property, {
+        name: visitName,
+        email: visitEmail,
+        date: visitDate,
+        time: visitTime,
+      })
+      setMessage(response.message)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to schedule visit right now.'
+      setMessage(`Error: ${msg}`)
+    }
   }
 
   const handleSave = () => {

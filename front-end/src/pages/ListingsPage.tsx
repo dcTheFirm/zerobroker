@@ -4,7 +4,7 @@ import { SearchBar } from '../components/SearchBar'
 import { PropertyCard } from '../components/PropertyCard'
 import { defaultFilters } from '../utils/search'
 import type { ListingType, Property, SearchFilters } from '../types/property'
-import { listProperties } from '../services/api'
+import { listProperties, getAllProperties } from '../services/api'
 import './ListingsPage.css'
 
 interface ListingsPageProps {
@@ -40,18 +40,44 @@ export function ListingsPage({ type, title, description }: ListingsPageProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let mounted = true
     setLoading(true)
     setError(null)
 
     listProperties(filters)
-      .then(({ data }) => {
-        setResults(data)
+      .then(async ({ data }) => {
+        if (!mounted) return
+        // If the backend returns very few results, try to augment with other properties
+        if (data.length >= 3) {
+          setResults(data)
+          return
+        }
+
+        try {
+          const all = await getAllProperties({ ...defaultFilters, type: 'all' })
+          // merge unique properties until we have at least 3
+          const ids = new Set(data.map((p) => p.id))
+          const combined = [...data]
+          for (const p of all) {
+            if (combined.length >= 3) break
+            if (!ids.has(p.id)) {
+              combined.push(p)
+              ids.add(p.id)
+            }
+          }
+          setResults(combined)
+        } catch {
+          // fallback to the original list
+          setResults(data)
+        }
       })
       .catch(() => {
         setError('Unable to load listings right now. Please try again.')
         setResults([])
       })
       .finally(() => setLoading(false))
+
+    return () => { mounted = false }
   }, [filters])
 
   const handleFilterChange = (updated: SearchFilters) => {

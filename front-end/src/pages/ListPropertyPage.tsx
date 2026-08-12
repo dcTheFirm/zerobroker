@@ -34,21 +34,26 @@ export function ListPropertyPage() {
     // If the user selected a file, image already contains a data URL
     const payloadImage = image.trim()
 
-    const result = await submitPropertyListing({
-      title: title.trim(),
-      type,
-      city: city.trim(),
-      area: area.trim(),
-      bedrooms,
-      bathrooms,
-      sqft,
-      price,
-      image: payloadImage,
-      tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
-    })
+    try {
+      const result = await submitPropertyListing({
+        title: title.trim(),
+        type,
+        city: city.trim(),
+        area: area.trim(),
+        bedrooms,
+        bathrooms,
+        sqft,
+        price,
+        image: payloadImage,
+        tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+      })
 
-    setStatus(result.message)
-    setTimeout(() => navigate('/'), 1500)
+      setStatus(result.message)
+      setTimeout(() => navigate('/'), 1500)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to submit listing right now.'
+      setError(msg)
+    }
   }
 
   return (
