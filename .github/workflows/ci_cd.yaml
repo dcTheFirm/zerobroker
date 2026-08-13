@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - CI-CD
     paths:
       - "front-end/**"
       - "backend/**"
