@@ -4,181 +4,278 @@ on:
   push:
     branches:
       - CI-CD
+    paths:
+      - "front-end/**"
+      - "backend/**"
+      - "backend-auth/**"
+      - "backend-buy/**"
+      - "backend-home/**"
+      - "backend-rent/**"
+      - "backend-search/**"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: gitops-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: docker.io
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
 jobs:
-  build-and-push:
+
+  # ==========================================================
+  # DETECT WHICH SERVICES CHANGED
+  # ==========================================================
+  changes:
+    name: Detect Changed Services
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed files
+        id: changes
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            frontend:
+              - 'front-end/**'
+
+            backend:
+              - 'backend/**'
+
+            backend-auth:
+              - 'backend-auth/**'
+
+            backend-buy:
+              - 'backend-buy/**'
+
+            backend-home:
+              - 'backend-home/**'
+
+            backend-rent:
+              - 'backend-rent/**'
+
+            backend-search:
+              - 'backend-search/**'
+
+      - name: Create build matrix
+        id: matrix
+        shell: bash
+        run: |
+          SERVICES="[]"
+
+          if [[ "${{ steps.changes.outputs.frontend }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"frontend",
+                "context":"front-end",
+                "dockerfile":"front-end/Dockerfile",
+                "manifest":"k8s/frontend/deployment.yaml",
+                "image":"frontend"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend",
+                "context":"backend",
+                "dockerfile":"backend/Dockerfile",
+                "manifest":"k8s/backend/deployment.yaml",
+                "image":"backend"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend-auth }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend-auth",
+                "context":"backend-auth",
+                "dockerfile":"backend-auth/Dockerfile",
+                "manifest":"k8s/backend/k8s-auth/deployment.yaml",
+                "image":"backend-auth"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend-buy }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend-buy",
+                "context":"backend-buy",
+                "dockerfile":"backend-buy/Dockerfile",
+                "manifest":"k8s/backend/k8s-buy/deployment.yaml",
+                "image":"backend-buy"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend-home }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend-home",
+                "context":"backend-home",
+                "dockerfile":"backend-home/Dockerfile",
+                "manifest":"k8s/backend/k8s-home/deployment.yaml",
+                "image":"backend-home"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend-rent }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend-rent",
+                "context":"backend-rent",
+                "dockerfile":"backend-rent/Dockerfile",
+                "manifest":"k8s/backend/k8s-rent/deployment.yaml",
+                "image":"backend-rent"
+              }]' <<< "$SERVICES")
+          fi
+
+          if [[ "${{ steps.changes.outputs.backend-search }}" == "true" ]]; then
+            SERVICES=$(jq -c \
+              '. + [{
+                "name":"backend-search",
+                "context":"backend-search",
+                "dockerfile":"backend-search/Dockerfile",
+                "manifest":"k8s/backend/k8s-search/deployment.yaml",
+                "image":"backend-search"
+              }]' <<< "$SERVICES")
+          fi
+
+          echo "Changed services:"
+          echo "$SERVICES" | jq .
+
+          echo "matrix={\"include\":$(echo "$SERVICES")}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$SERVICES" == "[]" ]]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+
+  # ==========================================================
+  # BUILD ONLY CHANGED SERVICES
+  # ==========================================================
+  build-and-push:
+    name: Build ${{ matrix.name }}
+    needs: changes
+
+    if: needs.changes.outputs.has_changes == 'true'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # -------------------------
-      # Frontend
-      # -------------------------
-      - name: Build and Push Frontend
-        uses: docker/build-push-action@v6
+      - name: Build and Push ${{ matrix.name }}
+        uses: docker/build-push-action@v7
         with:
-          context: ./front-end
-          file: ./front-end/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/frontend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          context: ./${{ matrix.context }}
+          file: ./${{ matrix.dockerfile }}
 
-      # -------------------------
-      # Backend
-      # -------------------------
-      - name: Build and Push Backend
-        uses: docker/build-push-action@v6
+          push: true
+
+          platforms: |
+            linux/amd64
+            linux/arm64
+
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
+
+          cache-from: |
+            type=gha,scope=${{ matrix.name }}
+
+          cache-to: |
+            type=gha,scope=${{ matrix.name }},mode=max
+
+
+  # ==========================================================
+  # UPDATE ONLY CHANGED KUBERNETES MANIFESTS
+  # ==========================================================
+  update-gitops:
+    name: Update GitOps Manifests
+    needs:
+      - changes
+      - build-and-push
+
+    if: needs.changes.outputs.has_changes == 'true'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          fetch-depth: 0
 
-      # -------------------------
-      # Backend Auth
-      # -------------------------
-      - name: Build and Push Backend Auth
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend-auth
-          file: ./backend-auth/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend-auth:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # -------------------------
-      # Backend Buy
-      # -------------------------
-      - name: Build and Push Backend Buy
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend-buy
-          file: ./backend-buy/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend-buy:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # -------------------------
-      # Backend Home
-      # -------------------------
-      - name: Build and Push Backend Home
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend-home
-          file: ./backend-home/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend-home:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # -------------------------
-      # Backend Rent
-      # -------------------------
-      - name: Build and Push Backend Rent
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend-rent
-          file: ./backend-rent/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend-rent:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # -------------------------
-      # Backend Search
-      # -------------------------
-      - name: Build and Push Backend Search
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend-search
-          file: ./backend-search/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/backend-search:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # =====================================================
-      # UPDATE KUBERNETES MANIFESTS
-      # =====================================================
-
-      - name: Update Kubernetes image tags
+      - name: Update changed image tags
+        shell: bash
+        env:
+          MATRIX: ${{ needs.changes.outputs.matrix }}
         run: |
           TAG="${GITHUB_SHA}"
 
-          sed -i "s|image: dcthefirm/frontend:.*|image: dcthefirm/frontend:${TAG}|" \
-            k8s/frontend/deployment.yaml
+          echo "$MATRIX" | jq -c '.include[]' | while read -r service; do
 
-          sed -i "s|image: dcthefirm/backend-auth:.*|image: dcthefirm/backend-auth:${TAG}|" \
-            k8s/backend/k8s-auth/deployment.yaml
+            IMAGE=$(echo "$service" | jq -r '.image')
+            MANIFEST=$(echo "$service" | jq -r '.manifest')
 
-          sed -i "s|image: dcthefirm/backend-buy:.*|image: dcthefirm/backend-buy:${TAG}|" \
-            k8s/backend/k8s-buy/deployment.yaml
+            echo "Updating:"
+            echo "  Image:    $IMAGE"
+            echo "  Manifest: $MANIFEST"
+            echo "  Tag:      $TAG"
 
-          sed -i "s|image: dcthefirm/backend-home:.*|image: dcthefirm/backend-home:${TAG}|" \
-            k8s/backend/k8s-home/deployment.yaml
+            sed -i \
+              "s|image: $DOCKER_USERNAME/${IMAGE}:.*|image: $DOCKER_USERNAME/${IMAGE}:${TAG}|" \
+              "$MANIFEST"
 
-          sed -i "s|image: dcthefirm/backend-rent:.*|image: dcthefirm/backend-rent:${TAG}|" \
-            k8s/backend/k8s-rent/deployment.yaml
+          done
 
-          sed -i "s|image: dcthefirm/backend-search:.*|image: dcthefirm/backend-search:${TAG}|" \
-            k8s/backend/k8s-search/deployment.yaml
-
-          # If you also have a main backend deployment:
-          if [ -f k8s/backend/deployment.yaml ]; then
-            sed -i "s|image: dcthefirm/backend:.*|image: dcthefirm/backend:${TAG}|" \
-              k8s/backend/deployment.yaml
-          fi
-
-      # =====================================================
-      # SHOW CHANGES
-      # =====================================================
-
-      - name: Show updated manifests
+      - name: Show changed manifests
         run: |
-          echo "Updated image references:"
-          grep -R "image:" k8s/
+          echo "=========================================="
+          echo "Updated Kubernetes manifests"
+          echo "=========================================="
 
-      # =====================================================
-      # COMMIT MANIFEST CHANGES
-      # =====================================================
+          git diff -- k8s/
 
-      - name: Commit and push Kubernetes manifests
+      - name: Commit GitOps changes
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -186,9 +283,11 @@ jobs:
           git add k8s/
 
           if git diff --cached --quiet; then
-            echo "No Kubernetes manifest changes."
+            echo "No Kubernetes changes detected."
             exit 0
           fi
 
-          git commit -m "chore: update images to ${GITHUB_SHA}"
+          git commit \
+            -m "chore(gitops): update images to ${GITHUB_SHA}"
+
           git push
