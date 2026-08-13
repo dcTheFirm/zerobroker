@@ -3,7 +3,7 @@ name: Build, Push and GitOps Update
 on:
   push:
     branches:
-      - CI-CD
+      - master
     paths:
       - "front-end/**"
       - "backend/**"
