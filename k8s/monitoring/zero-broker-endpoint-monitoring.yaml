@@ -1,0 +1,82 @@
+# ============================================================
+# 1. PROBES
+# ============================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: zero-broker-endpoints
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  jobName: zero-broker-endpoints
+  interval: 30s
+  scrapeTimeout: 10s
+
+  module: http_2xx
+
+  prober:
+    url: blackbox-exporter-prometheus-blackbox-exporter.monitoring.svc.cluster.local:9115
+    scheme: http
+
+  targets:
+    staticConfig:
+      static:
+        - http://backend-auth.zero-broker.svc.cluster.local:5000
+        - http://backend-buy.zero-broker.svc.cluster.local:4003
+        - http://backend-home.zero-broker.svc.cluster.local:4001
+        - http://backend-rent.zero-broker.svc.cluster.local:4002
+        - http://backend-search.zero-broker.svc.cluster.local:4004
+        - http://zerobroker-frontend-service.zero-broker.svc.cluster.local:80
+        - http://zero-broker.duckdns.org
+
+
+---
+# ============================================================
+# 2. ALERTS
+# ============================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: zero-broker-endpoint-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: zero-broker-endpoint-alerts
+      rules:
+
+        - alert: ZeroBrokerEndpointDown
+          expr: |
+            probe_success{
+              job="zero-broker-endpoints"
+            } == 0
+          for: 2m
+          labels:
+            severity: critical
+            application: zero-broker
+          annotations:
+            summary: "Zero Broker endpoint is DOWN"
+            description: |
+              Endpoint {{ $labels.instance }} is unreachable or returned a non-2xx response.
+
+        - alert: ZeroBrokerEndpointWarning
+          expr: |
+            probe_success{
+              job="zero-broker-endpoints"
+            } == 1
+            and
+            probe_http_status_code{
+              job="zero-broker-endpoints"
+            } >= 400
+          for: 2m
+          labels:
+            severity: warning
+            application: zero-broker
+          annotations:
+            summary: "Zero Broker endpoint returned HTTP error"
+            description: |
+              Endpoint {{ $labels.instance }} returned HTTP status {{ $value }}.
