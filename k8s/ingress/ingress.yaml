@@ -4,16 +4,20 @@ metadata:
   name: zerobroker-ingress
   namespace: zero-broker
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - zero-broker.duckdns.org # Please change this to your domain name, If you purchased a domain name, you can change it to your domain name.
 
   rules:
-    - host: zerobroker.local
+    - host: zero-broker.duckdns.org # Please change this to your domain name, If you purchased a domain name, you can change it to your domain name.
       http:
         paths:
-
           - path: /api/auth
             pathType: Prefix
             backend:
