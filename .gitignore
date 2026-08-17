@@ -35,7 +35,9 @@ service-account*.json
 credentials*.json
 secrets*.json
 
+#Application secrets
 mongo-secret.yaml
+monitoring/monitoring-secret.yaml
 
 # Editor directories and files
 .vscode/*
