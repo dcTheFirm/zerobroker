@@ -95,11 +95,11 @@ services:
         # Browser-facing URLs — these get baked into the JS bundle at build time.
         # Change these (and rebuild) if you deploy anywhere other than localhost.
 
-        VITE_HOME_BASE_URL: ${VITE_HOME_BASE_URL:-}
-        VITE_RENT_BASE_URL: ${VITE_RENT_BASE_URL:-}
-        VITE_BUY_BASE_URL: ${VITE_BUY_BASE_URL:-}
-        VITE_SEARCH_BASE_URL: ${VITE_SEARCH_BASE_URL:-}
-        VITE_AUTH_BASE_URL: ${VITE_AUTH_BASE_URL:-}
+        VITE_HOME_BASE_URL: ${VITE_HOME_BASE_URL:-http://localhost:4001}
+        VITE_RENT_BASE_URL: ${VITE_RENT_BASE_URL:-http://localhost:4002}
+        VITE_BUY_BASE_URL: ${VITE_BUY_BASE_URL:-http://localhost:4003}
+        VITE_SEARCH_BASE_URL: ${VITE_SEARCH_BASE_URL:-http://localhost:4004}
+        VITE_AUTH_BASE_URL: ${VITE_AUTH_BASE_URL:-http://localhost:5000}
         
     container_name: zerobroker-frontend
     restart: unless-stopped

@@ -2,19 +2,15 @@ import type { Property, SearchFilters, ListingType } from '../types/property'
 import { formatPrice } from '../data/properties'
 import { defaultFilters } from '../utils/search'
 
-function requireEnv(name: string, value: string | undefined) {
-  if (value === undefined) {
-    throw new Error(`${name} is not set. Set ${name} in your environment (Vite .env) to point to the backend service.`)
-  }
-  return value
-}
-
-const HOME_BASE = requireEnv('VITE_HOME_BASE_URL', import.meta.env.VITE_HOME_BASE_URL)
-const RENT_BASE = requireEnv('VITE_RENT_BASE_URL', import.meta.env.VITE_RENT_BASE_URL)
-const BUY_BASE = requireEnv('VITE_BUY_BASE_URL', import.meta.env.VITE_BUY_BASE_URL)
-const SEARCH_BASE = requireEnv('VITE_SEARCH_BASE_URL', import.meta.env.VITE_SEARCH_BASE_URL)
+const HOME_BASE = import.meta.env.VITE_HOME_BASE_URL ?? ''
+const RENT_BASE = import.meta.env.VITE_RENT_BASE_URL ?? ''
+const BUY_BASE = import.meta.env.VITE_BUY_BASE_URL ?? ''
+const SEARCH_BASE = import.meta.env.VITE_SEARCH_BASE_URL ?? ''
 
 async function fetchApi<T>(base: string, path: string, options?: RequestInit): Promise<T> {
+  if (!base) {
+    throw new Error('Property service is not configured. Set the VITE_*_BASE_URL frontend environment variables and rebuild.')
+  }
   const response = await fetch(`${base}${path}`, options)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
