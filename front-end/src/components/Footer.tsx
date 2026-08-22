@@ -28,6 +28,7 @@ export function Footer() {
               <li><Link to="/rent?city=Bangalore">Bangalore</Link></li>
               <li><Link to="/rent?city=Delhi NCR">Delhi NCR</Link></li>
               <li><Link to="/rent?city=Hyderabad">Hyderabad</Link></li>
+              <li><Link to="/rent?city=Ahmedabad">Ahmedabad</Link></li>
             </ul>
           </div>
           <div>
