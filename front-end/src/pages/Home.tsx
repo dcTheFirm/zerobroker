@@ -1,20 +1,42 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SearchBar } from '../components/SearchBar'
-import { PropertyCard } from '../components/PropertyCard'
 import { defaultFilters } from '../utils/search'
 import type { Property } from '../types/property'
 import { getAllProperties, getFeaturedProperties } from '../services/api'
 import './Home.css'
 
-const FALLBACK = 'https://images.unsplash.com/photo-1503264116251-35a269479413?w=900&q=85'
+// Real, verified photos per city (Wikimedia Commons, stable Special:FilePath links).
+// Keyed by lowercased, trimmed city name so free-text city values entered on
+// property listings (any casing/spacing) still resolve to the right photo.
 const cityImages: Record<string, string> = {
-  Mumbai: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=900&q=85',
-  Bangalore: 'https://images.unsplash.com/photo-1596176530659-155891ed211c?w=900&q=85',
-  'Delhi NCR': 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
-  Hyderabad: 'https://images.unsplash.com/photo-1617724664727-89a397de770a?w=900&q=85',
-  Pune: 'https://images.unsplash.com/photo-1570168007204-d874b3945ade?w=900&q=85',
-  Chennai: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=900&q=85',
+  mumbai: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=900&q=85',
+  bangalore: 'https://commons.wikimedia.org/wiki/Special:FilePath/UB%20City%20Skyline.jpg?width=900',
+  bengaluru: 'https://commons.wikimedia.org/wiki/Special:FilePath/UB%20City%20Skyline.jpg?width=900',
+  'delhi ncr': 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+  delhi: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+  'new delhi': 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+  hyderabad: 'https://commons.wikimedia.org/wiki/Special:FilePath/Charminar%20Hyderabad%201.jpg?width=900',
+  pune: 'https://commons.wikimedia.org/wiki/Special:FilePath/Shaniwar%20Wada%2C%20Pune.jpg?width=900',
+  chennai: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=900&q=85',
+  kolkata: 'https://images.unsplash.com/photo-1558431382-27e303142255?w=900&q=85',
+  ahmedabad: 'https://commons.wikimedia.org/wiki/Special:FilePath/Sabarmati%20Riverfront%20in%20Ahmedabad.jpg?width=900',
+  jaipur: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?w=900&q=85',
+  gurgaon: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+  gurugram: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+  noida: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=900&q=85',
+}
+
+// If a city has no curated photo (or its photo ever 404s), fall back to a
+// photo that's unique to THAT city rather than one shared generic image —
+// this is what was causing every unmapped city to show the same picture.
+function getCityImage(city: string) {
+  const key = city.trim().toLowerCase()
+  return cityImages[key] ?? `https://picsum.photos/seed/${encodeURIComponent(key || 'city')}/900/600`
+}
+
+function getCityImageFallback(city: string) {
+  return `https://picsum.photos/seed/${encodeURIComponent(city.trim().toLowerCase() || 'city')}/900/600`
 }
 
 export function Home() {
@@ -91,14 +113,9 @@ export function Home() {
       </div>
     </div></section>
 
-    <section className="listings-section"><div className="container reveal">
-      <div className="listings-section__header"><div><span className="eyebrow">Fresh on the floor</span><h2 className="section-title">Made for<br /><em>living well.</em></h2><p className="section-subtitle">A considered edit of places listed directly by their owners.</p></div><Link to="/rent" className="btn btn--outline">See all homes <span aria-hidden="true">↗</span></Link></div>
-      <div className="listings-grid">{featured.map((property, index) => <PropertyCard key={property.id} property={property} featuredIndex={index} />)}</div>
-    </div></section>
-
     <section className="cities-section"><div className="container reveal">
       <span className="eyebrow">A city, differently</span><h2 className="section-title">Start where<br /><em>you are.</em></h2><p className="section-subtitle">The familiar, then the unexpectedly perfect.</p>
-      <div className="cities-grid">{cityCounts.map(({ city, count }, index) => <Link key={city} to={`/rent?city=${encodeURIComponent(city)}`} className="city-card"><img src={cityImages[city.trim()] ?? FALLBACK} alt={city} className="city-card__image" loading="lazy" onError={(event) => { event.currentTarget.src = FALLBACK }} /><div className="city-card__overlay"><span className="city-card__index">0{index + 1}</span><span className="city-card__name">{city}</span><span className="city-card__count">{count} homes to browse <b>↗</b></span></div></Link>)}</div>
+      <div className="cities-grid">{cityCounts.map(({ city, count }, index) => <Link key={city} to={`/rent?city=${encodeURIComponent(city)}`} className="city-card"><img src={getCityImage(city)} alt={city} className="city-card__image" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = getCityImageFallback(city) }} /><div className="city-card__overlay"><span className="city-card__index">0{index + 1}</span><span className="city-card__name">{city}</span><span className="city-card__count">{count} homes to browse <b>↗</b></span></div></Link>)}</div>
     </div></section>
 
     <section className="cta-section"><div className="container reveal"><div className="cta-box"><span className="eyebrow">A direct introduction</span><h2 className="cta-box__title">Put your home<br /><em>on the map.</em></h2><p className="cta-box__desc">Meet people who are already looking for a place like yours, without an extra layer in between.</p><Link to="/list-property" className="btn btn--primary">List your property <span aria-hidden="true">↗</span></Link></div></div></section>

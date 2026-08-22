@@ -74,7 +74,7 @@ export async function getPropertyById(id: string | undefined | null): Promise<Pr
 
 export async function submitContactRequest(property: Property, message: string): Promise<{ success: boolean; message: string }> {
   const base = property.type === 'buy' ? BUY_BASE : RENT_BASE
-  const endpoint = `/${property.type}/properties/${property.id}/contact`
+  const endpoint = `/api/${property.type}/properties/${property.id}/contact`
 
   await fetchApi(base, endpoint, {
     method: 'POST',
@@ -91,7 +91,7 @@ export async function submitVisitRequest(property: Property, details: {
   time: string
 }): Promise<{ success: boolean; message: string }> {
   const base = property.type === 'buy' ? BUY_BASE : RENT_BASE
-  const endpoint = `/${property.type}/properties/${property.id}/visit`
+  const endpoint = `/api/${property.type}/properties/${property.id}/visit`
 
   await fetchApi(base, endpoint, {
     method: 'POST',
@@ -114,7 +114,7 @@ export async function submitPropertyListing(listing: {
   tags: string[]
 }): Promise<{ success: boolean; message: string }> {
   const base = listing.type === 'buy' ? BUY_BASE : RENT_BASE
-  await fetchApi(base, `/${listing.type}/properties`, {
+  await fetchApi(base, `/api/${listing.type}/properties`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(listing),
