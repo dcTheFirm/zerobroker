@@ -22,7 +22,7 @@ export function Header() {
         <NavLink to="/buy" className={({ isActive }) => `nav__link ${isActive ? 'nav__link--active' : ''}`} onClick={close}>Buy</NavLink>
       </nav>
       <div className="header__actions">
-        {user ? <><span className="header__user">{user.email}</span><button className="btn btn--ghost" onClick={signOut}>Sign out</button></> : <Link to="/signin" className="btn btn--ghost">Sign in</Link>}
+        {user ? <><span className="header__user">{user.email}</span><button className="btn btn--ghost" onClick={signOut}>Sign out</button></> : <><Link to="/signin" className="btn btn--ghost">Sign in</Link><Link to="/signup" className="btn btn--ghost">Sign up</Link></>}
         <Link to="/list-property" className="btn btn--outline">List a home <span aria-hidden="true">↗</span></Link>
       </div>
     </div>
