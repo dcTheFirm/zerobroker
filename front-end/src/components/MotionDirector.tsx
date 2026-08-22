@@ -2,8 +2,8 @@ import { useEffect } from 'react'
 
 export function MotionDirector() {
   useEffect(() => {
-    const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduceMotion || !('IntersectionObserver' in window)) {
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll<HTMLElement>('.reveal').forEach((element) => element.classList.add('is-revealed'))
       return
     }
 
@@ -21,6 +21,9 @@ export function MotionDirector() {
       element.classList.add('motion-pending')
       revealObserver.observe(element)
     })
+    const revealFallback = window.setTimeout(() => {
+      revealElements.forEach((element) => element.classList.add('is-revealed'))
+    }, 1600)
 
     let frame = 0
     const updateParallax = () => {
@@ -37,6 +40,7 @@ export function MotionDirector() {
     window.addEventListener('resize', onScroll)
     return () => {
       revealObserver.disconnect()
+      window.clearTimeout(revealFallback)
       revealElements.forEach((element) => element.classList.remove('motion-pending'))
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)

@@ -216,4 +216,3 @@ button {
 @keyframes spin { to { transform:rotate(1turn); } }
 @keyframes shimmer { to { background-position:-200% 0; } }
 @media (max-width:700px) { .container { width:min(100% - 30px, 1320px); } .page-header { padding-top:5.5rem; } }
-@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
