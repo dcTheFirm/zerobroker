@@ -12,10 +12,16 @@ on:
       - "backend-home/**"
       - "backend-rent/**"
       - "backend-search/**"
+    # Prevents the GitOps commit step from re-triggering this same workflow.
+    # (Belt-and-braces: the path filters above already exclude k8s/, but this
+    # makes the intent explicit and protects against future path changes.)
+    paths-ignore:
+      - "k8s/**"
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: gitops-${{ github.ref }}
@@ -52,22 +58,16 @@ jobs:
           filters: |
             frontend:
               - 'front-end/**'
-
             backend:
               - 'backend/**'
-
             backend-auth:
               - 'backend-auth/**'
-
             backend-buy:
               - 'backend-buy/**'
-
             backend-home:
               - 'backend-home/**'
-
             backend-rent:
               - 'backend-rent/**'
-
             backend-search:
               - 'backend-search/**'
 
@@ -75,6 +75,7 @@ jobs:
         id: matrix
         shell: bash
         run: |
+          set -euo pipefail
           SERVICES="[]"
 
           if [[ "${{ steps.changes.outputs.frontend }}" == "true" ]]; then
@@ -165,14 +166,12 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-
   # ==========================================================
   # BUILD ONLY CHANGED SERVICES
   # ==========================================================
   build-and-push:
     name: Build ${{ matrix.name }}
     needs: changes
-
     if: needs.changes.outputs.has_changes == 'true'
 
     runs-on: ubuntu-latest
@@ -184,7 +183,6 @@ jobs:
       matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -201,59 +199,69 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and Push ${{ matrix.name }}
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: ./${{ matrix.context }}
           file: ./${{ matrix.dockerfile }}
-
           push: true
-
           platforms: |
             linux/amd64
             linux/arm64
-
           tags: |
             ${{ env.DOCKER_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
-
           cache-from: |
             type=gha,scope=${{ matrix.name }}
-
           cache-to: |
             type=gha,scope=${{ matrix.name }},mode=max
 
+      # Fails fast if the digest is missing instead of silently shipping a
+      # broken/half-pushed multi-arch manifest to the GitOps update step.
+      - name: Verify image digest
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ steps.build.outputs.digest }}" ]]; then
+            echo "::error::No digest returned for ${{ matrix.image }} — build/push likely failed silently."
+            exit 1
+          fi
+          echo "Pushed ${{ matrix.image }}@${{ steps.build.outputs.digest }}"
 
   # ==========================================================
-  # UPDATE ONLY CHANGED KUBERNETES MANIFESTS
+  # UPDATE ONLY CHANGED KUBERNETES MANIFESTS (VIA PR)
   # ==========================================================
   update-gitops:
     name: Update GitOps Manifests
     needs:
       - changes
       - build-and-push
-
     if: needs.changes.outputs.has_changes == 'true'
 
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Update changed image tags
+        id: update
         shell: bash
         env:
           MATRIX: ${{ needs.changes.outputs.matrix }}
         run: |
+          set -euo pipefail
           TAG="${GITHUB_SHA}"
 
           echo "$MATRIX" | jq -c '.include[]' | while read -r service; do
-
             IMAGE=$(echo "$service" | jq -r '.image')
             MANIFEST=$(echo "$service" | jq -r '.manifest')
+
+            if [[ ! -f "$MANIFEST" ]]; then
+              echo "::error::Manifest not found: $MANIFEST"
+              exit 1
+            fi
 
             echo "Updating:"
             echo "  Image:    $IMAGE"
@@ -263,7 +271,17 @@ jobs:
             sed -i \
               "s|image: $DOCKER_USERNAME/${IMAGE}:.*|image: $DOCKER_USERNAME/${IMAGE}:${TAG}|" \
               "$MANIFEST"
+          done
 
+      # Catches a bad sed substitution (e.g. broken indentation/quoting)
+      # before it's committed and merged into the manifests ArgoCD reads from.
+      - name: Validate manifest YAML
+        run: |
+          set -euo pipefail
+          pip install --quiet --break-system-packages yamllint 2>/dev/null || pip install --quiet yamllint
+          for f in $(git diff --name-only -- k8s/); do
+            echo "Validating $f"
+            python3 -c "import yaml,sys; list(yaml.safe_load_all(open('$f')))"
           done
 
       - name: Show changed manifests
@@ -271,12 +289,15 @@ jobs:
           echo "=========================================="
           echo "Updated Kubernetes manifests"
           echo "=========================================="
-
           git diff -- k8s/
 
-      - name: Commit GitOps changes
+      - name: Commit and open GitOps PR
+        id: pr
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -284,10 +305,68 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "No Kubernetes changes detected."
+            echo "opened=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git commit \
-            -m "chore(gitops): update images to ${GITHUB_SHA}"
+          # Unique per-run branch name avoids collisions between concurrent
+          # runs and makes each PR traceable back to its triggering commit/run.
+          BRANCH="gitops/update-${GITHUB_SHA::8}-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(gitops): update images to ${GITHUB_SHA}"
+          git push origin "$BRANCH"
 
-          git push
+          BODY=$(cat <<EOF
+          Automated image tag update for commit ${GITHUB_SHA}.
+
+          **Triggered by:** ${GITHUB_ACTOR}
+          **Workflow run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          **Services updated:**
+          \`\`\`
+          $(echo "$MATRIX" | jq -r '.include[].image' 2>/dev/null || true)
+          \`\`\`
+          EOF
+          )
+
+          PR_URL=$(gh pr create \
+            --base master \
+            --head "$BRANCH" \
+            --title "chore(gitops): update images to ${GITHUB_SHA:0:8}" \
+            --body "$BODY" \
+            --label "gitops,automated")
+
+          echo "Opened PR: $PR_URL"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "opened=true" >> "$GITHUB_OUTPUT"
+
+          # Queues the merge — only completes once required checks/reviews
+          # pass, so this never bypasses branch protection.
+          gh pr merge --auto --squash --delete-branch "$PR_URL"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MATRIX: ${{ needs.changes.outputs.matrix }}
+
+      # If the ruleset requires manual approval, don't hang the runner
+      # indefinitely — poll for a bounded time, then exit cleanly and let
+      # the PR merge whenever a human approves it.
+      - name: Wait for auto-merge (bounded)
+        if: steps.pr.outputs.opened == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PR_URL="${{ steps.pr.outputs.pr_url }}"
+          for i in $(seq 1 20); do
+            STATE=$(gh pr view "$PR_URL" --json state -q .state)
+            if [[ "$STATE" == "MERGED" ]]; then
+              echo "PR merged."
+              exit 0
+            fi
+            if [[ "$STATE" == "CLOSED" ]]; then
+              echo "::error::PR was closed without merging."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::warning::PR not merged within 5 minutes — likely awaiting review/checks. It will merge automatically once approved: $PR_URL"
