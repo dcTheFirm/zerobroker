@@ -12,11 +12,12 @@ on:
       - "backend-home/**"
       - "backend-rent/**"
       - "backend-search/**"
-    # Prevents the GitOps commit step from re-triggering this same workflow.
-    # (Belt-and-braces: the path filters above already exclude k8s/, but this
-    # makes the intent explicit and protects against future path changes.)
-    paths-ignore:
-      - "k8s/**"
+    # NOTE: the paths list above is an allow-list — only these directories
+    # trigger the workflow. k8s/** is intentionally NOT in this list, so
+    # commits made by the GitOps step (which only touch k8s/) never
+    # re-trigger this workflow. (GitHub Actions does not allow combining
+    # `paths` and `paths-ignore` on the same event, so this is enforced
+    # purely by omission.)
   workflow_dispatch:
 
 permissions:
