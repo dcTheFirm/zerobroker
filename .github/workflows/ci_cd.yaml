@@ -12,6 +12,7 @@ on:
       - "backend-home/**"
       - "backend-rent/**"
       - "backend-search/**"
+      - ".github/workflows/ci_cd.yaml"
     # NOTE: the paths list above is an allow-list — only these directories
     # trigger the workflow. k8s/** is intentionally NOT in this list, so
     # commits made by the GitOps step (which only touch k8s/) never
@@ -59,6 +60,7 @@ jobs:
           filters: |
             frontend:
               - 'front-end/**'
+              - ".github/workflows/ci_cd.yaml"
             backend:
               - 'backend/**'
             backend-auth:
