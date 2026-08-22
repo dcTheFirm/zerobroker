@@ -1,11 +1,4 @@
-function requireEnv(name: string, value: string | undefined) {
-  if (value === undefined) {
-    throw new Error(`${name} is not set. Set ${name} in your environment (Vite .env) to point to the auth backend.`)
-  }
-  return value
-}
-
-const AUTH_BASE = requireEnv('VITE_AUTH_BASE_URL', import.meta.env.VITE_AUTH_BASE_URL)
+const AUTH_BASE = import.meta.env.VITE_AUTH_BASE_URL ?? ''
 const AUTH_KEY = 'zerobroker-user'
 const OFFLINE_ERROR = 'Authentication service unavailable.'
 
@@ -36,6 +29,9 @@ export function subscribeAuthChanges(callback: (user: AuthUser | null) => void) 
 }
 
 async function fetchAuth<T>(path: string, options?: RequestInit): Promise<T> {
+  if (!AUTH_BASE) {
+    throw new Error('Authentication service is not configured. Set VITE_AUTH_BASE_URL and rebuild the frontend.')
+  }
   let response: Response
 
   try {
