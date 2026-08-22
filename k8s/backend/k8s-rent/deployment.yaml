@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: backend-rent
-          image: dcthefirm/backend-rent:2c9c27bbb7cff5fa58d3db464351b92bd7d6c3dc
+          image: dcthefirm/backend-rent:47a4cd9329298d9603e2856b1887ce30e8442e22
 
           ports:
             - containerPort: 4002
