@@ -211,6 +211,27 @@ jobs:
             linux/arm64
           tags: |
             ${{ env.DOCKER_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
+          # The frontend is the ONLY image that needs build-args: Vite bakes
+          # VITE_* vars into the compiled JS at build time, so they must be
+          # set here, not in a k8s configmap/secret (those only affect
+          # runtime env, which the browser bundle never reads).
+          #
+          # IMPORTANT: replace https://zero-broker.duckdns.org below with
+          # your actual production domain (must match k8s/ingress/ingress.yaml
+          # `host:` and the TLS cert). The path suffix (/api/home etc.) must
+          # match the `path:` prefixes in that same ingress file — the
+          # Traefik ingress routes each prefix to the matching backend
+          # service, so these URLs just need to land on the right domain;
+          # ingress handles getting them to the right pod from there.
+          # Using the FULL origin (not empty strings) also keeps this
+          # compatible with the existing frontend guard that rejects an
+          # empty base URL — no frontend code changes required.
+          build-args: |
+            ${{ matrix.name == 'frontend' && 'VITE_HOME_BASE_URL=https://zero-broker.duckdns.org' || '' }}
+            ${{ matrix.name == 'frontend' && 'VITE_RENT_BASE_URL=https://zero-broker.duckdns.org' || '' }}
+            ${{ matrix.name == 'frontend' && 'VITE_BUY_BASE_URL=https://zero-broker.duckdns.org' || '' }}
+            ${{ matrix.name == 'frontend' && 'VITE_SEARCH_BASE_URL=https://zero-broker.duckdns.org' || '' }}
+            ${{ matrix.name == 'frontend' && 'VITE_AUTH_BASE_URL=https://zero-broker.duckdns.org' || '' }}
           cache-from: |
             type=gha,scope=${{ matrix.name }}
           cache-to: |
