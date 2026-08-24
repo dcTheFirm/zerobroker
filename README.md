@@ -6,7 +6,8 @@ ZeroBroker is a **containerized real-estate microservices application** running 
  ![Alternative Text](/Images/diagram.gif)
 
 
- ![Alternative Text](/Images/updatesd.gif)
+
+ ![Alternative Text](/Images/Pasted%20image%20(2).png)
 
 
 ## Architecture
@@ -73,7 +74,7 @@ Grafana Dashboards
 5. **Argo CD** detects the changes and synchronizes them to the Kubernetes cluster.
 6. Kubernetes deploys the updated application.
 
- ![Alternative Text](/Images/linkedin_high_quality.gif)
+ ![Alternative Text](/Images/140.238.229.225_31659_applications_argocd_zero-broker_view=network&resource=%20(1).png)
 
 ## Monitoring & Alerts
 
