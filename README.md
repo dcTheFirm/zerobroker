@@ -3,7 +3,11 @@ https://zero-broker.duckdns.org
 
 ZeroBroker is a **containerized real-estate microservices application** running on Kubernetes with automated CI/CD, GitOps deployment, monitoring, and alerting.
 
- ![Alternative Text](/Images/Pasted%20image%20(2).png)
+ ![Alternative Text](/Images/diagram.gif)
+
+
+ ![Alternative Text](/Images/updatesd.gif)
+
 
 ## Architecture
 
@@ -35,7 +39,6 @@ Prometheus → Alert Rules → Alertmanager → Discord
 Grafana Dashboards
 ```
 
- ![Alternative Text](/Images/ChatGPT%20Image%20Aug%2023,%202026,%2005_38_53%20PM.png)
 ## Tech Stack
 
 * **Frontend:** React
@@ -70,7 +73,7 @@ Grafana Dashboards
 5. **Argo CD** detects the changes and synchronizes them to the Kubernetes cluster.
 6. Kubernetes deploys the updated application.
 
- ![Alternative Text](/Images/Pasted%20image.png)
+ ![Alternative Text](/Images/linkedin_high_quality.gif)
 
 ## Monitoring & Alerts
 
@@ -95,11 +98,17 @@ Alerts are handled by **Alertmanager** and sent to **Discord** through webhooks.
 
  ![Alternative Text](/Images/ChatGPT%20Image%20Aug%2023,%202026,%2005_29_23%20PM.png)
 
+
+ ![Alternative Text](/Images/Pasted%20image.png)
+
 ## Kubernetes Namespaces
 
 * `zero-broker` — Application workloads
 * `monitoring` — Prometheus, Grafana, Alertmanager and monitoring components
 * `argocd` — Argo CD
+
+![Alternative Text](/Images/k3s.png)
+
 
 ## Repository Structure
 
