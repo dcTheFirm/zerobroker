@@ -24,15 +24,15 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-The frontend is configured to interact with several backend services:
+The frontend is configured to interact with several backend services. When a base URL is not set, requests use same-origin API paths; this is the expected setup for the Vercel deployment, where root-level rewrites route requests to the corresponding service:
 
-- `VITE_HOME_BASE_URL` for home section data (default: `http://localhost:4001`)
-- `VITE_RENT_BASE_URL` for rent section data (default: `http://localhost:4002`)
-- `VITE_BUY_BASE_URL` for buy section data (default: `http://localhost:4003`)
-- `VITE_SEARCH_BASE_URL` for search results (default: `http://localhost:4004`)
-- `VITE_AUTH_BASE_URL` for auth operations (default: `http://localhost:5000`)
+- `VITE_HOME_BASE_URL` for home section data
+- `VITE_RENT_BASE_URL` for rent section data
+- `VITE_BUY_BASE_URL` for buy section data
+- `VITE_SEARCH_BASE_URL` for search results
+- `VITE_AUTH_BASE_URL` for auth operations
 
-Copy `.env.example` to `.env` inside the `front-end/` folder to override these values locally.
+To use separate backend ports during local development, copy `.env.example` to `.env` inside the `front-end/` folder. These optional values override the same-origin API paths.
 
 The frontend also uses offline-ready fallbacks so the app remains usable when one service is temporarily unavailable.
 

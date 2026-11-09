@@ -29,9 +29,6 @@ export function subscribeAuthChanges(callback: (user: AuthUser | null) => void) 
 }
 
 async function fetchAuth<T>(path: string, options?: RequestInit): Promise<T> {
-  if (!AUTH_BASE) {
-    throw new Error('Authentication service is not configured. Set VITE_AUTH_BASE_URL and rebuild the frontend.')
-  }
   let response: Response
 
   try {

@@ -33,7 +33,7 @@ export function SignInPage() {
     <div className="auth-page">
       <div className="container auth-page__card">
         <h1>Sign In</h1>
-        <p>Access ZeroBroker with your email address. The app requires a running auth backend; ensure VITE_AUTH_BASE_URL points to your auth service.</p>
+        <p>Access ZeroBroker with your email address. Authentication requests use the configured auth service.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="auth-form__label" htmlFor="signin-email">

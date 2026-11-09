@@ -8,9 +8,6 @@ const BUY_BASE = import.meta.env.VITE_BUY_BASE_URL ?? ''
 const SEARCH_BASE = import.meta.env.VITE_SEARCH_BASE_URL ?? ''
 
 async function fetchApi<T>(base: string, path: string, options?: RequestInit): Promise<T> {
-  if (!base) {
-    throw new Error('Property service is not configured. Set the VITE_*_BASE_URL frontend environment variables and rebuild.')
-  }
   const response = await fetch(`${base}${path}`, options)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)

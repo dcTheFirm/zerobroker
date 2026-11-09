@@ -1,0 +1,71 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "express"
+    },
+    "backend-auth": {
+      "root": "backend-auth",
+      "framework": "express"
+    },
+    "backend-buy": {
+      "root": "backend-buy",
+      "framework": "express"
+    },
+    "backend-home": {
+      "root": "backend-home",
+      "framework": "express"
+    },
+    "backend-rent": {
+      "root": "backend-rent",
+      "framework": "express"
+    },
+    "backend-search": {
+      "root": "backend-search",
+      "framework": "express"
+    },
+    "front-end": {
+      "root": "front-end",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/home/(.*)",
+      "destination": {
+        "service": "backend-home"
+      }
+    },
+    {
+      "source": "/api/rent/(.*)",
+      "destination": {
+        "service": "backend-rent"
+      }
+    },
+    {
+      "source": "/api/buy/(.*)",
+      "destination": {
+        "service": "backend-buy"
+      }
+    },
+    {
+      "source": "/api/search(.*)",
+      "destination": {
+        "service": "backend-search"
+      }
+    },
+    {
+      "source": "/api/auth/(.*)",
+      "destination": {
+        "service": "backend-auth"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "front-end"
+      }
+    }
+  ]
+}
