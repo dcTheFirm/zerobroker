@@ -138,6 +138,12 @@ The application can be deployed to Kubernetes using the manifests in the `k8s/` 
 
 For the GitOps setup, **Argo CD is the preferred deployment method** because it continuously monitors the Git repository and keeps the Kubernetes cluster synchronized with the desired configuration.
 
+### Vercel
+
+The root `vercel.json` deploys the frontend and backend services together. Backend services use their existing Dockerfiles so production dependencies are installed inside each container. Each backend listens on Vercel's `PORT` (80 by default).
+
+Add `MONGODB_URI` and, optionally, `MONGODB_DB_NAME` to the Vercel project environment variables for the environments you deploy (Production, Preview, and/or Development). Redeploy after changing environment variables.
+
 ---
 
 ### End-to-End

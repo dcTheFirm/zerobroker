@@ -3,63 +3,33 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "backend-auth": {
       "root": "backend-auth",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "backend-buy": {
       "root": "backend-buy",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "backend-home": {
       "root": "backend-home",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "backend-rent": {
       "root": "backend-rent",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "backend-search": {
       "root": "backend-search",
-      "framework": "express",
-      "installCommand": "npm ci",
-      "functions": {
-        "src/app.ts": {
-          "includeFiles": "node_modules/**"
-        }
-      }
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     },
     "front-end": {
       "root": "front-end",
