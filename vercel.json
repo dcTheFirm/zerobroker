@@ -3,27 +3,33 @@
   "services": {
     "backend": {
       "root": "backend",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "backend-auth": {
       "root": "backend-auth",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "backend-buy": {
       "root": "backend-buy",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "backend-home": {
       "root": "backend-home",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "backend-rent": {
       "root": "backend-rent",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "backend-search": {
       "root": "backend-search",
-      "framework": "express"
+      "framework": "express",
+      "installCommand": "npm ci"
     },
     "front-end": {
       "root": "front-end",
